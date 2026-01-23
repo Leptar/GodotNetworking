@@ -1,0 +1,64 @@
+name: Compile GDExtensions
+
+on:
+  push:
+    branches:
+      - **
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+          - os: windows-latest
+            platform: windows
+            arch: x86_64
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+
+    steps:
+      # Checkout Code (Recursive is CRITICAL for libuv/godot-cpp)
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Setup Python (Required for SCons)
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Install SCons
+      - name: Install SCons
+        run: |
+          pip install scons
+
+      # Linux Dependencies (Only needed for Linux runner)
+      - name: Install Linux Deps
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libx11-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev
+
+      # Compile GDExtensions
+      - name: Compile GDExtensions
+        working-directory: src
+        run: |
+          scons platform=${{ matrix.platform }} arch=${{ matrix.arch }} target=template_debug dev_build=yes -j2
+      
+      # Verify Output
+      - name: Verify Binaries Exist
+        shell: bash
+        run: |
+          echo "Checking game/bin/ for binaries..."
+          ls -R game/bin/
