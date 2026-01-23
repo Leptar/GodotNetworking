@@ -1,0 +1,26 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-debug",
+            "type": "shell",
+            "command": "scons",
+            "args": [
+                "platform=macos",
+                "arch=arm64",
+                "target=template_debug",
+                "dev_build=yes",
+                "debug_symbols=yes",
+                "-j10"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/src"
+            },
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

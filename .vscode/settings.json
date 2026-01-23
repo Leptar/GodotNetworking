@@ -1,0 +1,6 @@
+{
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/src",
+        "--query-driver=/usr/bin/clang++"
+    ]
+}

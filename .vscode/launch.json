@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "1. Launch Editor",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/engine/bin/godot.macos.editor.arm64",
+            "args": [ "--path", "${workspaceFolder}/game", "--editor" ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build-debug"
+        },
+        {
+            "name": "2. Launch Game",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/engine/bin/godot.macos.editor.arm64",
+            "args": [ "--path", "${workspaceFolder}/game" ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build-debug"
+        }
+    ]
+}

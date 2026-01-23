@@ -1,0 +1,13 @@
+[configuration]
+entry_symbol = "gameplay_network_init"
+compatibility_minimum = "4.2"
+
+[libraries]
+macos.debug = "res://bin/libnetwork.macos.template_debug.arm64.dylib"
+macos.release = "res://bin/libnetwork.macos.template_release.arm64.dylib"
+
+windows.debug.x86_64 = "res://bin/libnetwork.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://bin/libnetwork.windows.template_release.x86_64.dll"
+
+linux.debug.x86_64 = "res://bin/libnetwork.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://bin/libnetwork.linux.template_release.x86_64.so"
