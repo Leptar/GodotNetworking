@@ -78,15 +78,16 @@ jobs:
         with:
           path: engine/bin
           # Key includes OS, Arch, and the specific commit of the engine submodule
-          key: godot-engine-release-v2-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.engine-hash.outputs.hash }}
+          key: godot-engine-release-v3-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.engine-hash.outputs.hash }}
 
       # --- Build Engine (Only on Cache Miss) ---
       - name: Build Godot Engine (Release Template)
         if: steps.cache-engine.outputs.cache-hit != 'true'
         working-directory: engine
         run: |
-          echo "⚠️ Cache Miss! Building Engine from source..."
+          echo "⚠️ Cache Miss! Building Engine and Editor from source..."
           scons platform=${{ matrix.platform }} arch=${{ matrix.arch }} target=template_release disable_path_overrides=no -j4
+          scons platform=${{ matrix.platform }} arch=${{ matrix.arch }} target=editor disable_path_overrides=no -j4
 
       # --- The "Warm Up" (Import Assets) ---
       # We run the EDITOR in headless mode just to let it scan the folder.
