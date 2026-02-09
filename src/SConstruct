@@ -12,6 +12,7 @@ if env["platform"] == "macos":
     env["arch"] = "arm64" # Ensure this variable is set for the suffix logic
 elif env["platform"] == "windows":
     env.Append(CCFLAGS=["/std:c++17", "/O2"]) 
+    env.Append(LIBS=["ws2_32"])
 elif env["platform"] == "linux":
     env.Append(CCFLAGS=["-std=c++17", "-O3"])
 
