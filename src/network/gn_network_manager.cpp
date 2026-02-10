@@ -41,6 +41,10 @@ void GDNetworkManager::_bind_methods() {
     	PropertyInfo(Variant::INT, "port"), 
         PropertyInfo(Variant::PACKED_BYTE_ARRAY, "data")
     ));
+
+	ClassDB::bind_method(D_METHOD("bind_port", "port"), &GDNetworkManager::bind_port);
+	ClassDB::bind_method(D_METHOD("send_packet", "ip", "port", "data"), &GDNetworkManager::send_packet);
+	ClassDB::bind_method(D_METHOD("poll"), &GDNetworkManager::poll);
 }
 
 GDNetworkManager::GDNetworkManager() {
@@ -94,7 +98,7 @@ bool GDNetworkManager::bind_port(int port)
         return false;
     }
     
-    UtilityFunctions::printerr("Binding UDP socket to port %d", port);
+    UtilityFunctions::print("Binding UDP socket to port ", port);
     return true;
 }
 
