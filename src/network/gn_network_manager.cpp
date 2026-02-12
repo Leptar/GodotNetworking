@@ -1,19 +1,11 @@
-// 1. Bibliothèques Réseaux Windows (Indispensable pour WSADATA, SOCKET, AF_INET, etc.)
-#define WIN32_LEAN_AND_MEAN // Pour éviter les conflits avec windows.h
+#define WIN32_LEAN_AND_MEAN 
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <windows.h> // Parfois nécessaire explicitement
-
-// 2. Bibliothèques Godot (Indispensable pour String, UtilityFunctions, etc.)
+#include <windows.h> 
 #include "gn_network_manager.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
-/*#include <godot_cpp/variant/string.hpp>
-#include <godot_cpp/variant/packed_byte_array.hpp>*/
 
-
-// 4. Espace de noms (Namespace)
-// Godot utilise le namespace 'godot'. Sans ça, il ne trouve pas 'UtilityFunctions'.
 using namespace godot;
 
 #ifdef _WIN32
@@ -136,7 +128,7 @@ void GDNetworkManager::poll()
     char buffer[65535];
     while (true)
     {
-		sockaddr_in sender_address; // 1. On crée la variable pour stocker l'adresse
+		sockaddr_in sender_address; 
         int sender_len = sizeof(sender_address);
 
         int len = recvfrom(udp_socket,
@@ -148,9 +140,18 @@ void GDNetworkManager::poll()
         
         if (len < 0)
         {
-            break;
+            int error_code = WSAGetLastError();
+            if (error_code == WSAEWOULDBLOCK) 
+            {
+                break; 
+            }
+            else 
+            {
+                UtilityFunctions::printerr("Socket error: ", error_code);
+                break;
+            }
         }
-        
+
         PackedByteArray received_data;
         received_data.resize(len);
         memcpy(received_data.ptrw(), buffer, len);
@@ -161,5 +162,6 @@ void GDNetworkManager::poll()
         
         UtilityFunctions::print("Received ", len, "bytes");
         emit_signal("packet_received", String(sender_ip), sender_port, received_data);
+		
     }
 }

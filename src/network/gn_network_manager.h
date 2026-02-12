@@ -11,7 +11,7 @@
 #include <godot_cpp/variant/string.hpp>
 
 namespace godot {
-
+	
 	struct GDReplicatedNode {
         ObjectID node_id;
         std::vector<StringName> properties;

@@ -5,7 +5,7 @@
 #include <entt/entt.hpp> // L'include magique
 
 namespace godot {
-
+    
     class EnttManager : public Node {
         GDCLASS(EnttManager, Node)
 
