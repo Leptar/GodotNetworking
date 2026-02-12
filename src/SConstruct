@@ -4,17 +4,19 @@ import os
 # Initialize the environment once
 env = SConscript("godot-cpp/SConstruct")
 
+env.Append(CPPPATH=["network", "#entt/src"])
+
 # 2. Apply High-Performance Flags (Architecture specific)
 if env["platform"] == "macos":
     # Force ARM64 for M4 chips
-    env.Append(CCFLAGS=["-std=c++17", "-arch", "arm64"])
+    env.Append(CCFLAGS=["-std=c++20", "-arch", "arm64"])
     env.Append(LINKFLAGS=["-arch", "arm64"])
     env["arch"] = "arm64" # Ensure this variable is set for the suffix logic
 elif env["platform"] == "windows":
-    env.Append(CCFLAGS=["/std:c++17", "/O2"]) 
+    env.Append(CCFLAGS=["/std:c++20", "/Zc:__cplusplus", "/O2"]) 
     env.Append(LIBS=["ws2_32"])
 elif env["platform"] == "linux":
-    env.Append(CCFLAGS=["-std=c++17", "-O3"])
+    env.Append(CCFLAGS=["-std=c++20", "-O3"])
 
 # --- 3. SUFFIX GENERATION LOGIC (THE FIX) ---
 # Goal: Create strings like ".macos.template_debug.arm64.dylib"
