@@ -50,7 +50,7 @@ GDNetworkManager::~GDNetworkManager() {
 }
 
 void GDNetworkManager::_process(double delta) {
-    // Add tick computation there
+    poll();
 }
 
 void GDNetworkManager::_close_socket() {
