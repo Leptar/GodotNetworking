@@ -49,6 +49,11 @@ GDNetworkManager::~GDNetworkManager() {
     _close_socket();
 }
 
+void GDNetworkManager::_ready() {
+    this.connect("packet_received", Callable(this, "_on_packet_received"));
+    bIsBinded = bind_port(80);
+}
+
 void GDNetworkManager::_process(double delta) {
     poll();
 }
@@ -163,5 +168,44 @@ void GDNetworkManager::poll()
         UtilityFunctions::print("Received ", len, "bytes");
         emit_signal("packet_received", String(sender_ip), sender_port, received_data);
 		
+    }
+}
+
+void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_port, const PackedByteArray& data)
+{
+    uint32_t packet_type = data.decode_u32(0);
+    UtilityFunctions::print("Paquet recu de type : ", packet_type);
+    
+    switch (packet_type)
+    {
+        case JOIN:
+        {
+            UtilityFunctions::print("Paquet JOIN reçu !"); 
+            connected_clients.push_back({next_network_id, {sender_ip, sender_port}});
+            if (entt_manager)
+            {
+                // Ajout de l'entité à l'ECS et stock id local
+                entt_manager->create_entity(next_network_id, TypeID::PLAYER);
+            }
+            
+            PackedByteArray SpawnPacket;
+            SpawnPacket.resize(20);
+            SpawnPacket.encode_u32(0, PacketType::SPAWN);
+            SpawnPacket.encode_u32(4, next_network_id);
+            packet.encode_u32(8, TypeID::PLAYER); 
+            packet.encode_u32(12, 0); // Stub x (getEntitybyNetID and get position x)
+            packet.encode_u32(16, 0); // Stub y (same idea)
+                
+            for (const ClientInfo& client : connected_clients)
+            {
+                send_packet(client.ip, client.port, SpawnPacket);
+            }
+                
+            next_network_id++;
+                break;
+        }
+        
+        default:
+            break;
     }
 }
