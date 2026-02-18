@@ -17,7 +17,9 @@ file(GLOB_RECURSE SERVER_SOURCES "src/server/*.cpp" "src/server/*.h")
 
 # --- EXECUTABLE SERVEUR ---
 add_executable(ServerApp ${SERVER_SOURCES} ${COMMON_SOURCES}
-        src/common/game_types.h)
+        src/common/game_types.h
+        src/server/server_network.h
+        src/server/server_network.cpp)
 
 # Link des sockets pour Windows (ws2_32)
 if(WIN32)
