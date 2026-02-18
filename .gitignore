@@ -171,23 +171,7 @@ compile_commands.json
 # 7. Godot Cache
 game/.godot/
 
-# Ignore Compiled Binaries (but keep the folder structure)
-game/bin/*.dylib
-game/bin/*.so
-game/bin/*.dll
-game/bin/*.exp
 src/godot-cpp/bin/
 
 # Ignore Intermediate Build Objects
-src/**/*.o
-src/**/*.os
 src/godot-cpp/**/*.o
-.cache/
-src/.cache
-
-# Ignore Compilation Database (It is machine specific)
-compile_commands.json
-.sconsign.dblite
-
-# Godot Imports (Never commit these)
-game/.godot/
