@@ -52,7 +52,7 @@ void ServerNetworkManager::send_packet(const std::string& ip, int port, const st
     dest_address.sin_port = htons(port);
     inet_pton(AF_INET, ip.c_str(), &dest_address.sin_addr);
 
-    sendto(udp_socket, (const char*)data.data(), (int)data.size(), 0, (struct sockaddr*)&dest_address, sizeof(dest_address));
+    sendto(udp_socket, (const char*)data.data(), (int)data.size() * sizeof(uint32_t), 0, (struct sockaddr*)&dest_address, sizeof(dest_address));
 }
 
 bool ServerNetworkManager::poll() {
@@ -156,4 +156,3 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             break;
     }
 }
-

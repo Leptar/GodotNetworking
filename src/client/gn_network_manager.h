@@ -4,32 +4,15 @@
 // 1. INCLUDES
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include "game_types.h"
 #include <vector>
-#include <map>
 #include <entt_manager.h>
-
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
+#include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/variant/string.hpp>
 
 namespace godot {
-	
-    enum PacketType
-    {
-        JOIN = 0,
-        SPAWN = 1,
-    };
-    
-    enum TypeID
-    {
-        PLAYER = 1,
-        ENEMY = 2,
-    };
-    
-    struct ClientInfo {
-        String ip;
-        int port;
-    };
     
 	struct GDReplicatedNode {
         ObjectID node_id;
@@ -47,20 +30,23 @@ namespace godot {
 
     class GDNetworkManager : public Node {
         GDCLASS(GDNetworkManager, Node)
-	private:
+
         SOCKET udp_socket = INVALID_SOCKET;
         bool bIsBinded = false;
+        uint32_t local_network_id = 0;
         
         void _set_non_blocking(SOCKET sock);
         void _close_socket();
 
-        uint32_t next_network_id = 100; 
-        std::map<uint32_t, ClientInfo> connected_clients;
-        EnttManager* entt_manager = nullptr;
-        std::vector<GDReplicatedNode> replicated_nodes;
+        void debug_print_nodes();
+
+        std::unordered_map<uint32_t, GDReplicatedNode> replicated_nodes;
+        std::unordered_map<uint32_t, Ref<PackedScene>> type_registry;
 
     protected:
         static void _bind_methods();
+
+        void register_type(uint32_t type_id, Ref<PackedScene> scene);
 
     public:
         GDNetworkManager();
@@ -80,7 +66,7 @@ namespace godot {
 
         void _on_packet_received(const String& sender_ip, int sender_port, const PackedByteArray& data);
         
-        void register_node(Node* p_node);
+        void register_node(uint32_t net_id, Node* p_node);
         PackedByteArray serialize_snapshot();
     };
 }

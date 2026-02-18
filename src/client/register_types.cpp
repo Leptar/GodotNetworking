@@ -13,7 +13,7 @@ void initialize_network_module(ModuleInitializationLevel p_level) {
         return;
     }
 
-    GDREGISTER_RUNTIME_CLASS(GDNetworkManager);
+    ClassDB::register_class<GDNetworkManager>();
 }
 
 void uninitialize_network_module(ModuleInitializationLevel p_level) {

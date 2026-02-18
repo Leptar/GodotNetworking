@@ -6,8 +6,8 @@ compatibility_minimum = "4.6"
 macos.debug = "res://bin/libnetwork.macos.template_debug.arm64.dylib"
 macos.release = "res://bin/libnetwork.macos.template_release.arm64.dylib"
 
-windows.debug.x86_64 = "res://bin/libnetwork.windows.template_debug.x86_64.dll"
-windows.release.x86_64 = "res://bin/libnetwork.windows.template_release.x86_64.dll"
+windows.debug.x86_64 = "res://bin/godot_network_lab.dll"
+windows.release.x86_64 = "res://bin/godot_network_lab.dll"
 
 linux.debug.x86_64 = "res://bin/libnetwork.linux.template_debug.x86_64.so"
 linux.release.x86_64 = "res://bin/libnetwork.linux.template_release.x86_64.so"

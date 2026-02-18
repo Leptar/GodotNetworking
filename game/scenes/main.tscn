@@ -1,10 +1,15 @@
 [gd_scene format=3 uid="uid://bfj02d6t245ji"]
 
-[ext_resource type="Script" uid="uid://c4463xlgmpsdg" path="res://Scripts/gd_network_manager.gd" id="1_o5qli"]
+[sub_resource type="CanvasTexture" id="CanvasTexture_o5qli"]
+specular_color = Color(0.955406, 0.47007173, 0.6691702, 1)
 
 [node name="Main" type="Node" unique_id=462397334]
 
-[node name="GDNetworkManager" type="GDNetworkManager" parent="." unique_id=1274457594]
-script = ExtResource("1_o5qli")
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1157548146]
+offset_left = -76.0
+offset_top = -42.0
+offset_right = 78.0
+offset_bottom = 45.0
+texture = SubResource("CanvasTexture_o5qli")
 
-[connection signal="packet_received" from="GDNetworkManager" to="GDNetworkManager" method="_on_packet_received"]
+[node name="GDNetworkManager" type="GDNetworkManager" parent="." unique_id=24124961]

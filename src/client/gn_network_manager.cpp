@@ -5,6 +5,11 @@
 #include "gn_network_manager.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/window.hpp>
+#include <godot_cpp/classes/packed_scene.hpp>
+#include <godot_cpp/classes/node2d.hpp>
 
 using namespace godot;
 
@@ -41,7 +46,15 @@ void GDNetworkManager::_bind_methods() {
     ClassDB::bind_method(D_METHOD("_on_packet_received", "ip", "port", "data"), &GDNetworkManager::_on_packet_received);
 }
 
+void GDNetworkManager::register_type(uint32_t type_id, Ref<PackedScene> scene) {
+    if (scene.is_valid()) {
+        type_registry[type_id] = scene;
+        UtilityFunctions::print("Type enregistré : ", type_id);
+    }
+}
+
 GDNetworkManager::GDNetworkManager() {
+    UtilityFunctions::print("--- GDNetworkManager CONSTRUCTOR CALLED ---");
     #ifdef _WIN32
         static GD_WSASockInitializer wsa_init;
 	#endif
@@ -52,11 +65,20 @@ GDNetworkManager::~GDNetworkManager() {
 }
 
 void GDNetworkManager::_ready() {
+    Ref<PackedScene> player_scene = ResourceLoader::get_singleton()->load("res://scenes/player.tscn");
+    register_type(PLAYER, player_scene);
+
 
     // TODO : recuperer l'instance du entt_Manager (surement)
 
     this->connect("packet_received", Callable(this, "_on_packet_received"));
-    bIsBinded = bind_port(8050);
+    bIsBinded = bind_port(0);
+
+    PackedByteArray JoinPacket;
+    JoinPacket.resize(4);
+    JoinPacket.encode_u32(0, JOIN);
+
+    send_packet("127.0.0.1", 8050, JoinPacket);
 }
 
 void GDNetworkManager::_process(double delta) {
@@ -183,33 +205,69 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
     
     switch (packet_type)
     {
-        case JOIN:
-        {
-            UtilityFunctions::print("Paquet JOIN reçu !"); 
-            connected_clients[next_network_id] = {sender_ip, sender_port};
-            if (entt_manager)
-            {
-                // Ajout de l'entité à l'ECS et stock id local
-                entt_manager->create_entity(next_network_id, TypeID::PLAYER);
+        case SPAWN: {
+
+            uint32_t typeID = data.decode_u32(8);
+            uint32_t netID = data.decode_u32(4);
+            auto it = type_registry.find(typeID);
+
+            if (local_network_id == 0) {
+                local_network_id = netID;
+                UtilityFunctions::print(">>> JE SUIS LE JOUEUR ", local_network_id, " <<<");
             }
-            
-            PackedByteArray SpawnPacket;
-            SpawnPacket.resize(20);
-            SpawnPacket.encode_u32(0, PacketType::SPAWN);
-            SpawnPacket.encode_u32(4, next_network_id);
-            SpawnPacket.encode_u32(8, TypeID::PLAYER);
-            SpawnPacket.encode_u32(12, 0); // Stub x (getEntitybyNetID and get position x)
-            SpawnPacket.encode_u32(16, 0); // Stub y (same idea)
-                
-            for (const auto& [_, client] : connected_clients)
-            {
-                send_packet(client.ip, client.port, SpawnPacket);
+
+            if (it != type_registry.end()) {
+                Ref<PackedScene> scene = it->second;
+                Node* new_entity = scene->instantiate();
+                float x = data.decode_float(12);
+                float y = data.decode_float(16);
+
+                if (Node2D *node_2d = Object::cast_to<Node2D>(new_entity)) {
+                    node_2d->set_position(Vector2(x, y));
+
+                    bool is_mine = netID == local_network_id;
+                    node_2d->set("is_local_authority", is_mine);
+                }
+                if (SceneTree *tree = get_tree()) {
+                    Window *root = tree->get_root();
+                    root->add_child(new_entity);
+                    register_node(netID, new_entity);
+                }
+
+                debug_print_nodes();
+            } else {
+                UtilityFunctions::print("Received unknown typeID");
             }
-                
-            next_network_id++;
+
             break;
         }
-        
+
+
         default: break;
     }
+}
+
+void GDNetworkManager::register_node(uint32_t net_id,Node* p_node) {
+    GDReplicatedNode node;
+    node.node_id = p_node->get_instance_id();
+    node.properties.push_back("position");
+
+    replicated_nodes[net_id] = node;
+}
+
+void GDNetworkManager::debug_print_nodes() {
+    UtilityFunctions::print("--- Liste des Objets Répliqués ---");
+    for (const auto& pair : replicated_nodes) {
+        uint32_t net_id = pair.first;
+        // On récupère la valeur (GDReplicatedNode)
+        const GDReplicatedNode& node_info = pair.second;
+
+        String status = "Invalide";
+        if (node_info.is_valid()) {
+            status = node_info.get_node()->get_name();
+        }
+
+        UtilityFunctions::print("NetID: ", net_id, " -> Node: ", status);
+    }
+    UtilityFunctions::print("----------------------------------");
 }
