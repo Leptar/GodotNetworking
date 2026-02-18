@@ -128,6 +128,49 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/c++,godot,macos,windows,linux
 
+# ==============================================================================
+# SECTION SPECIFIQUE AU LABO
+# ==============================================================================
+
+# 1. IDE & Build (CMake / CLion)
+.idea/
+cmake-build-debug/
+cmake-build-release/
+out/
+vcpkg_installed/
+
+# 2. Binaires du Serveur
+ServerApp
+ServerApp.exe
+
+# 3. Binaires du Client (Godot)
+# On garde le dossier game/bin/ mais on ignore les libs compilées
+game/bin/*.dylib
+game/bin/*.so
+game/bin/*.dll
+game/bin/*.exp
+game/bin/*.pdb
+
+# 4. Librairies Tierces (Intermediate Objects)
+# Mise à jour des chemins vers le dossier /lib
+lib/godot-cpp/bin/
+lib/godot-cpp/**/*.o
+lib/godot-cpp/**/*.os
+lib/entt/**/*.o
+
+# 5. Objets de compilation de ton propre code
+src/**/*.o
+src/**/*.os
+.cache/
+src/.cache
+
+# 6. SCons
+.sconsign.dblite
+compile_commands.json
+
+# 7. Godot Cache
+game/.godot/
+
 # Ignore Compiled Binaries (but keep the folder structure)
 game/bin/*.dylib
 game/bin/*.so
