@@ -242,7 +242,20 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             break;
         }
 
+        case LEAVE: {
+            uint32_t netID = data.decode_u32(4);
+            auto it = replicated_nodes.find(netID);
 
+            if (it != replicated_nodes.end() ) {
+                if (it->second.is_valid()) {
+                    it->second.get_node()->queue_free();
+                }
+                replicated_nodes.erase(it);
+            }
+
+            debug_print_nodes();
+            break;
+        }
         default: break;
     }
 }
@@ -270,4 +283,24 @@ void GDNetworkManager::debug_print_nodes() {
         UtilityFunctions::print("NetID: ", net_id, " -> Node: ", status);
     }
     UtilityFunctions::print("----------------------------------");
+}
+
+void GDNetworkManager::_notification(int p_notification) {
+    switch (p_notification) {
+        case NOTIFICATION_WM_CLOSE_REQUEST: {
+
+            PackedByteArray LeavePacket;
+            LeavePacket.resize(12);
+            LeavePacket.encode_u32(0, LEAVE);
+            LeavePacket.encode_u32(4, local_network_id);
+            LeavePacket.encode_u32(8, PLAYER);
+
+            send_packet("127.0.0.1", 8050, LeavePacket);
+
+            break;
+        }
+
+        default: break;
+    }
+
 }

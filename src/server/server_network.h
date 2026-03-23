@@ -12,15 +12,20 @@
 #include <iostream>
 
 // On inclut nos types communs (définis précédemment)
+#include <chrono>
+
 #include "../common/game_types.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
 class ServerNetworkManager {
 
+    int TIMEOUT = 5; // En secondes
+
     struct ClientInfo {
         std::string ip;
         int port;
+        std::chrono::steady_clock::time_point last_activity_time;
     };
     uint32_t next_network_id = 100;
     std::map<uint32_t, ClientInfo> connected_clients;
@@ -44,6 +49,8 @@ public:
 
     // Envoi de données
     void send_packet(const std::string& ip, int port, const std::vector<uint32_t>& data);
+
+    void check_timeouts();
 
 private:
     // La fonction qui traitera le paquet reçu (logique serveur)
