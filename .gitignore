@@ -177,6 +177,8 @@ src/godot-cpp/bin/
 src/godot-cpp/**/*.o
 
 # C++ Build artifacts
-*.ilk
+game/bin/*.ilk
 *.pdb
 *.exp
+game/bin/godot_network_lab.ilk
+vc140.pdb
