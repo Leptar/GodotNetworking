@@ -175,3 +175,8 @@ src/godot-cpp/bin/
 
 # Ignore Intermediate Build Objects
 src/godot-cpp/**/*.o
+
+# C++ Build artifacts
+*.ilk
+*.pdb
+*.exp
