@@ -68,8 +68,6 @@ namespace godot {
         
         void register_node(uint32_t net_id, Node* p_node);
         PackedByteArray serialize_snapshot();
-
-        void _notification(int p_notification);
     };
 }
 #endif
