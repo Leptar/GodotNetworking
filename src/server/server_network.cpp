@@ -109,6 +109,7 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             ClientInfo info;
             info.ip = sender_ip;
             info.port = sender_port;
+            info.last_activity_time = std::chrono::steady_clock::now();
             connected_clients[next_network_id] = info;
 
             uint32_t new_client_id = next_network_id;
@@ -151,8 +152,54 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             // ...
             break;
 
+
+        case 2: { // LEAVE
+            uint32_t network_id = decode_uint32(data, 4);
+            auto it = connected_clients.find(network_id);
+            if (it == connected_clients.end()) {
+                std::cout << "[Network] Client " << sender_ip << ":" << sender_port << " already deconnected" << std::endl;
+                break;
+            }
+
+            std::cout << "[Network] Client " << sender_ip << ":" << sender_port << " deconnected" << std::endl;
+            std::vector<uint32_t> LeavePacket;
+            LeavePacket.push_back(2);
+            LeavePacket.push_back(it->first);
+            LeavePacket.push_back(1); // Player
+
+            for (const auto& [net_id, client] : connected_clients) {
+                if (net_id == it->first) continue;
+                send_packet(client.ip, client.port, LeavePacket);
+            }
+
+            connected_clients.erase(it);
+            break;
+        }
+
         default:
             std::cout << "[Network] Unknown packet type: " << packet_type << std::endl;
             break;
+    }
+}
+
+
+void ServerNetworkManager::check_timeouts() {
+    for (auto it = connected_clients.begin(); it != connected_clients.end();) {
+        if (std::chrono::steady_clock::now() - it->second.last_activity_time > std::chrono::seconds(TIMEOUT)) {
+            std::cout << "[Network] Client " << it->second.ip << ":" << it->second.port << " timed out" << std::endl;
+            std::vector<uint32_t> LeavePacket;
+            LeavePacket.push_back(2);
+            LeavePacket.push_back(it->first);
+            LeavePacket.push_back(1); // Player
+
+            for (const auto& [net_id, client] : connected_clients) {
+                if (net_id == it->first) continue;
+                send_packet(client.ip, client.port, LeavePacket);
+            }
+
+            it = connected_clients.erase(it);
+        } else {
+            ++it;
+        }
     }
 }

@@ -15,6 +15,7 @@ namespace godot {
     enum PacketType {
         JOIN = 0,
         SPAWN = 1,
+        LEAVE = 2,
     };
 
     // Structure de base d'un paquet SPAWN
@@ -24,6 +25,12 @@ namespace godot {
             uint32_t network_id;
             uint32_t type_id;
             float x, y;
+        };
+
+        struct LeavePacket {
+            uint32_t packet_type = 2; // 2 = LEAVE
+            uint32_t network_id;
+            uint32_t type_id;
         };
     #pragma pack(pop)
 

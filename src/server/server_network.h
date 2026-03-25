@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 #include <iostream>
+#include <chrono>
 
 // On inclut nos types communs (définis précédemment)
 #include "../common/game_types.h"
@@ -18,9 +19,12 @@
 
 class ServerNetworkManager {
 
+    int TIMEOUT = 5;
+
     struct ClientInfo {
         std::string ip;
         int port;
+        std::chrono::steady_clock::time_point last_activity_time;
     };
     uint32_t next_network_id = 100;
     std::map<uint32_t, ClientInfo> connected_clients;
@@ -45,6 +49,7 @@ public:
     // Envoi de données
     void send_packet(const std::string& ip, int port, const std::vector<uint32_t>& data);
 
+    void check_timeouts();
 private:
     // La fonction qui traitera le paquet reçu (logique serveur)
     void _on_packet_received(const std::string& sender_ip, int sender_port, std::vector<uint8_t>& data);
