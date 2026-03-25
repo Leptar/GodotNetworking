@@ -48,7 +48,7 @@ public:
     bool poll();
 
     // Envoi de données
-    void send_packet(const std::string& ip, int port, const std::vector<uint32_t>& data);
+    void send_packet(const std::string& ip, int port, const std::vector<uint8_t>& data);
 
     void check_timeouts();
 private:

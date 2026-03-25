@@ -45,6 +45,9 @@ namespace godot {
 
         std::thread ping_thread;
         std::atomic<bool> is_running{true};
+        std::vector<uint64_t> rtt_history;
+
+        uint64_t latency;
 
     protected:
         static void _bind_methods();
@@ -68,6 +71,8 @@ namespace godot {
         void poll();
 
         void _on_packet_received(const String& sender_ip, int sender_port, const PackedByteArray& data);
+
+        void _latency_updated(uint64_t latency);
         
         void register_node(uint32_t net_id, Node* p_node);
         PackedByteArray serialize_snapshot();

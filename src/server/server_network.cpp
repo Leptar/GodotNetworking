@@ -44,7 +44,7 @@ bool ServerNetworkManager::start() {
     return true;
 }
 
-void ServerNetworkManager::send_packet(const std::string& ip, int port, const std::vector<uint32_t>& data) {
+void ServerNetworkManager::send_packet(const std::string& ip, int port, const std::vector<uint8_t>& data) {
     if (udp_socket == INVALID_SOCKET) return;
 
     sockaddr_in dest_address{};
@@ -52,7 +52,7 @@ void ServerNetworkManager::send_packet(const std::string& ip, int port, const st
     dest_address.sin_port = htons(port);
     inet_pton(AF_INET, ip.c_str(), &dest_address.sin_addr);
 
-    sendto(udp_socket, (const char*)data.data(), (int)data.size() * sizeof(uint32_t), 0, (struct sockaddr*)&dest_address, sizeof(dest_address));
+    sendto(udp_socket, (const char*)data.data(), (int)data.size() * sizeof(uint8_t), 0, (struct sockaddr*)&dest_address, sizeof(dest_address));
 }
 
 bool ServerNetworkManager::poll() {
@@ -104,6 +104,16 @@ uint64_t decode_uint64(const std::vector<uint8_t>& data, size_t offset) {
     return value;
 }
 
+void encode_uint32(std::vector<uint8_t>& packet, uint32_t value) {
+    uint8_t* ptr = reinterpret_cast<uint8_t*>(&value);
+    packet.insert(packet.end(), ptr, ptr + sizeof(uint32_t));
+}
+
+void encode_uint64(std::vector<uint8_t>& packet, uint64_t value) {
+    uint8_t* ptr = reinterpret_cast<uint8_t*>(&value);
+    packet.insert(packet.end(), ptr, ptr + sizeof(uint64_t));
+}
+
 void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int sender_port, std::vector<uint8_t>& data) {
     if (data.empty()) return;
 
@@ -124,13 +134,13 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             std::cout << "[Server] New client connected. Assigned NetworkID: " << new_client_id << std::endl;
 
             // paquet SPAWN
-            std::vector<uint32_t> spawn_packet;
+            std::vector<uint8_t> spawn_packet;
 
-            spawn_packet.push_back(1); // PacketType::SPAWN
-            spawn_packet.push_back(new_client_id); // NetworkID
-            spawn_packet.push_back(1); // TypeID::PLAYER
-            spawn_packet.push_back(0); // X
-            spawn_packet.push_back(0); // Y
+            encode_uint32(spawn_packet, 1);// PacketType::SPAWN
+            encode_uint32(spawn_packet, new_client_id); // NetworkID
+            encode_uint32(spawn_packet, 1); // TypeID::PLAYER
+            encode_uint32(spawn_packet, 0); // X
+            encode_uint32(spawn_packet, 0); // Y
 
             for (const auto& [_, client] : connected_clients)
             {
@@ -141,13 +151,13 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             {
                 if (net_id == new_client_id) continue;
 
-                std::vector<uint32_t> other_packet;
+                std::vector<uint8_t> other_packet;
 
-                other_packet.push_back(1);
-                other_packet.push_back(net_id);
-                other_packet.push_back(1);
-                other_packet.push_back(0); // Stub (en attendant d'avoir un manager entt, qui me donnera la position)
-                other_packet.push_back(0); // Stub (meme chose)
+                encode_uint32(other_packet, 1);
+                encode_uint32(other_packet, net_id);
+                encode_uint32(other_packet, 1);
+                encode_uint32(other_packet, 0); // Stub (en attendant d'avoir un manager entt, qui me donnera la position)
+                encode_uint32(other_packet, 0); // Stub (meme chose)
 
                 send_packet(sender_ip, sender_port, other_packet);
 
@@ -169,10 +179,10 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             }
 
             std::cout << "[Network] Client " << sender_ip << ":" << sender_port << " deconnected" << std::endl;
-            std::vector<uint32_t> LeavePacket;
-            LeavePacket.push_back(2);
-            LeavePacket.push_back(it->first);
-            LeavePacket.push_back(1); // Player
+            std::vector<uint8_t> LeavePacket;
+            encode_uint32(LeavePacket, 2);
+            encode_uint32(LeavePacket, it->first);
+            encode_uint32(LeavePacket, 1); // Player
 
             for (const auto& [net_id, client] : connected_clients) {
                 if (net_id == it->first) continue;
@@ -190,7 +200,18 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             std::cout << "[Network] Received PING from " << sender_ip << ":" << sender_port << " with ID: " << ping_id;
             std::cout << " and timestamp: " << t0 << std::endl;
 
+            auto now = std::chrono::steady_clock::now().time_since_epoch();
+            uint64_t t1 = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+
             std::vector<uint8_t> PongPacket;
+            encode_uint32(PongPacket, 4);
+            encode_uint32(PongPacket, ping_id);
+            encode_uint64(PongPacket, t0);
+            encode_uint64(PongPacket, t1);
+
+            send_packet(sender_ip, sender_port, PongPacket);
+
+            break;
         }
 
         default:
@@ -204,10 +225,10 @@ void ServerNetworkManager::check_timeouts() {
     for (auto it = connected_clients.begin(); it != connected_clients.end();) {
         if (std::chrono::steady_clock::now() - it->second.last_activity_time > std::chrono::seconds(TIMEOUT)) {
             std::cout << "[Network] Client " << it->second.ip << ":" << it->second.port << " timed out" << std::endl;
-            std::vector<uint32_t> LeavePacket;
-            LeavePacket.push_back(2);
-            LeavePacket.push_back(it->first);
-            LeavePacket.push_back(1); // Player
+            std::vector<uint8_t> LeavePacket;
+            encode_uint32(LeavePacket, 2);
+            encode_uint32(LeavePacket, it->first);
+            encode_uint32(LeavePacket, 1); // Player
 
             for (const auto& [net_id, client] : connected_clients) {
                 if (net_id == it->first) continue;

@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://bfj02d6t245ji"]
 
+[ext_resource type="Script" uid="uid://emr3ju5axmor" path="res://scenes/pinglabel.gd" id="1_o5qli"]
+
 [sub_resource type="CanvasTexture" id="CanvasTexture_o5qli"]
 specular_color = Color(0.955406, 0.47007173, 0.6691702, 1)
 
@@ -13,3 +15,12 @@ offset_bottom = 45.0
 texture = SubResource("CanvasTexture_o5qli")
 
 [node name="GDNetworkManager" type="GDNetworkManager" parent="." unique_id=24124961]
+
+[node name="PingLabel" type="Label" parent="GDNetworkManager" unique_id=1898545343]
+offset_left = -223.0
+offset_top = -125.0
+offset_right = -183.0
+offset_bottom = -102.0
+script = ExtResource("1_o5qli")
+
+[connection signal="_latency_updated" from="GDNetworkManager" to="GDNetworkManager/PingLabel" method="_on_gd_network_manager_latency_updated"]

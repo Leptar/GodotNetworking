@@ -3,6 +3,8 @@
 #include <ws2tcpip.h>
 #include <windows.h> 
 #include "gn_network_manager.h"
+
+#include <numeric>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
@@ -37,6 +39,10 @@ void GDNetworkManager::_bind_methods() {
     	PropertyInfo(Variant::STRING, "ip"),
     	PropertyInfo(Variant::INT, "port"), 
         PropertyInfo(Variant::PACKED_BYTE_ARRAY, "data")
+    ));
+
+    ADD_SIGNAL(MethodInfo("_latency_updated",
+        PropertyInfo(Variant::INT, "latency")
     ));
 
 	ClassDB::bind_method(D_METHOD("bind_port", "port"), &GDNetworkManager::bind_port);
@@ -280,6 +286,26 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             debug_print_nodes();
             break;
         }
+
+		case PONG: {
+            uint32_t ping_id = data.decode_u32(4);
+            uint64_t t0 = data.decode_u64(8);
+            uint64_t t1 = data.decode_u64(16);
+
+            auto now = std::chrono::steady_clock::now().time_since_epoch();
+            uint64_t t2 = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+
+            uint64_t rtt = t2 - t0;
+
+            if (rtt_history.size() > 10) {
+                rtt_history.erase(rtt_history.begin());
+            }
+            rtt_history.push_back(rtt);
+
+            latency = std::accumulate(rtt_history.begin(), rtt_history.end(), 0) / rtt_history.size();
+
+            emit_signal("_latency_updated", latency);
+		}
 
         default: break;
     }
