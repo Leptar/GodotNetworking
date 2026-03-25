@@ -79,6 +79,30 @@ void GDNetworkManager::_ready() {
     JoinPacket.encode_u32(0, JOIN);
 
     send_packet("127.0.0.1", 8050, JoinPacket);
+
+	ping_thread = std::thread([this]() {
+    	uint32_t current_ping_id = 0;
+
+    	while (is_running) {
+        	// Récupérer le temps actuel en millisecondes (t0)
+        	auto now = std::chrono::steady_clock::now().time_since_epoch();
+        	uint64_t t0 = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+
+        	// Construire et envoyer le paquet
+        	PackedByteArray PingPacket;
+            PingPacket.resize(16);
+            PingPacket.encode_u32(0, PING);
+            PingPacket.encode_u32(4, current_ping_id);
+            PingPacket.encode_u64(8, t0);
+
+        	send_packet("127.0.0.1", 8050, PingPacket);
+
+        	current_ping_id++;
+
+        	// Faire une pause d'une seconde avant la prochaine itération
+        	std::this_thread::sleep_for(std::chrono::seconds(1));
+    	}
+	});
 }
 
 void GDNetworkManager::_process(double delta) {
@@ -289,6 +313,9 @@ void GDNetworkManager::debug_print_nodes() {
 void GDNetworkManager::_notification(int p_notification) {
     switch (p_notification) {
         case NOTIFICATION_WM_CLOSE_REQUEST: {
+
+			is_running.store(false);
+            ping_thread.join();
 
             PackedByteArray LeavePacket;
             LeavePacket.resize(12);

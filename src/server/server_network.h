@@ -26,6 +26,7 @@ class ServerNetworkManager {
         int port;
         std::chrono::steady_clock::time_point last_activity_time;
     };
+
     uint32_t next_network_id = 100;
     std::map<uint32_t, ClientInfo> connected_clients;
 

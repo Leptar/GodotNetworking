@@ -16,6 +16,8 @@ namespace godot {
         JOIN = 0,
         SPAWN = 1,
         LEAVE = 2,
+        PING = 3,
+        PONG = 4
     };
 
     // Structure de base d'un paquet SPAWN
@@ -32,6 +34,20 @@ namespace godot {
             uint32_t network_id;
             uint32_t type_id;
         };
+
+        struct PingPacket {
+            uint32_t packet_type = 3; // 3 = PING
+            uint32_t ping_id;
+            uint64_t t0;
+        };
+
+        struct PongPacket {
+            uint32_t packet_type = 4; // 4 = P0NG
+            uint32_t ping_id;
+            uint64_t t0;
+            uint64_t t1;
+        };
+
     #pragma pack(pop)
 
     enum TypeID {

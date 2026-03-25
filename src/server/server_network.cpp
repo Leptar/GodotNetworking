@@ -97,6 +97,13 @@ uint32_t decode_uint32(const std::vector<uint8_t>& data, size_t offset) {
     return value;
 }
 
+uint64_t decode_uint64(const std::vector<uint8_t>& data, size_t offset) {
+    if (data.size() < offset + 8) return 0; // Sécurité
+    uint64_t value;
+    memcpy(&value, data.data() + offset, sizeof(uint64_t));
+    return value;
+}
+
 void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int sender_port, std::vector<uint8_t>& data) {
     if (data.empty()) return;
 
@@ -174,6 +181,16 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
 
             connected_clients.erase(it);
             break;
+        }
+
+        case 3: { //PING
+            uint32_t ping_id = decode_uint32(data, 4);
+            uint64_t t0 = decode_uint64(data, 8);
+
+            std::cout << "[Network] Received PING from " << sender_ip << ":" << sender_port << " with ID: " << ping_id;
+            std::cout << " and timestamp: " << t0 << std::endl;
+
+            std::vector<uint8_t> PongPacket;
         }
 
         default:

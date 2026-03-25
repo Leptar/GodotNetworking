@@ -43,6 +43,9 @@ namespace godot {
         std::unordered_map<uint32_t, GDReplicatedNode> replicated_nodes;
         std::unordered_map<uint32_t, Ref<PackedScene>> type_registry;
 
+        std::thread ping_thread;
+        std::atomic<bool> is_running{true};
+
     protected:
         static void _bind_methods();
 
