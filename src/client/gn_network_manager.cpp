@@ -305,6 +305,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             latency = std::accumulate(rtt_history.begin(), rtt_history.end(), 0) / rtt_history.size();
 
             emit_signal("_latency_updated", latency);
+            UtilityFunctions::print("Actual Latency : ", latency, " ms");
 		}
 
         default: break;
