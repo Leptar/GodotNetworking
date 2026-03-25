@@ -53,7 +53,9 @@ namespace godot {
             float aim_x;
             float aim_y;
         };
-        std::deque<FrameInput> input_history;
+
+        std::deque<FrameInput> input_history{};
+        uint32_t current_sequence = 0;
 
     protected:
         static void _bind_methods();

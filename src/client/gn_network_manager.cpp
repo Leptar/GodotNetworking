@@ -5,6 +5,7 @@
 #include "gn_network_manager.h"
 
 #include <numeric>
+#include <godot_cpp/classes/canvas_item.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
@@ -12,6 +13,7 @@
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/node2d.hpp>
+#include <godot_cpp/classes/input.hpp>
 
 using namespace godot;
 
@@ -116,6 +118,39 @@ void GDNetworkManager::_ready() {
 
 void GDNetworkManager::_process(double delta) {
     poll();
+
+    uint8_t current_keys = 0;
+    if (Input::get_singleton()->is_action_pressed("ui_up")) current_keys |= (1 << 0);
+    if (Input::get_singleton()->is_action_pressed("ui_down")) current_keys |= (1 << 1);
+    if (Input::get_singleton()->is_action_pressed("ui_left")) current_keys |= (1 << 2);
+    if (Input::get_singleton()->is_action_pressed("ui_right")) current_keys |= (1 << 3);
+
+    Vector2 mouse_pos = get_viewport()->get_mouse_position();
+    FrameInput frame_input{current_keys, mouse_pos.x, mouse_pos.y};
+    if (input_history.size() >= 20) {
+        input_history.pop_front();
+    }
+
+    input_history.push_back(frame_input);
+    current_sequence++;
+
+    InputPacket input_packet{};
+    input_packet.packet_type = INPUT;
+    input_packet.network_id = local_network_id;
+    input_packet.sequence = current_sequence;
+    int i = 0;
+    for (; i < input_history.size(); i++) {
+        input_packet.keys[i] = input_history[i].keys;
+        input_packet.aim_x[i] = input_history[i].aim_x;
+        input_packet.aim_y[i] = input_history[i].aim_y;
+    }
+
+    PackedByteArray data;
+    data.resize(sizeof(InputPacket));
+
+    memcpy(data.ptrw(), &input_packet, sizeof(InputPacket));
+
+    send_packet("127.0.0.1", 8050, data);
 }
 
 void GDNetworkManager::_close_socket() {
