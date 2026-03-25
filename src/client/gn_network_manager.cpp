@@ -71,8 +71,11 @@ GDNetworkManager::~GDNetworkManager() {
 }
 
 void GDNetworkManager::_ready() {
-    Ref<PackedScene> player_scene = ResourceLoader::get_singleton()->load("res://scenes/player.tscn");
-    register_type(PLAYER, player_scene);
+    Ref<PackedScene> own_player_scene = ResourceLoader::get_singleton()->load("res://scenes/ownplayer.tscn");
+    Ref<PackedScene> other_player_scene = ResourceLoader::get_singleton()->load("res://scenes/otherplayer.tscn");
+    register_type(OWN_PLAYER, own_player_scene);
+    register_type(OTHER_PLAYER, other_player_scene);
+
 
 
     // TODO : recuperer l'instance du entt_Manager (surement)
@@ -348,7 +351,7 @@ void GDNetworkManager::_notification(int p_notification) {
             LeavePacket.resize(12);
             LeavePacket.encode_u32(0, LEAVE);
             LeavePacket.encode_u32(4, local_network_id);
-            LeavePacket.encode_u32(8, PLAYER);
+            LeavePacket.encode_u32(8, OWN_PLAYER);
 
             send_packet("127.0.0.1", 8050, LeavePacket);
 

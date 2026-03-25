@@ -134,19 +134,33 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             std::cout << "[Server] New client connected. Assigned NetworkID: " << new_client_id << std::endl;
 
             // paquet SPAWN
-            std::vector<uint8_t> spawn_packet;
+            std::vector<uint8_t> spawn_otherPlayer_packet;
 
-            encode_uint32(spawn_packet, 1);// PacketType::SPAWN
-            encode_uint32(spawn_packet, new_client_id); // NetworkID
-            encode_uint32(spawn_packet, 1); // TypeID::PLAYER
-            encode_uint32(spawn_packet, 0); // X
-            encode_uint32(spawn_packet, 0); // Y
+            encode_uint32(spawn_otherPlayer_packet, 1);// PacketType::SPAWN
+            encode_uint32(spawn_otherPlayer_packet, new_client_id); // NetworkID
+            encode_uint32(spawn_otherPlayer_packet, 2); // TypeID::OTHERPLAYER
+            encode_uint32(spawn_otherPlayer_packet, 0); // X
+            encode_uint32(spawn_otherPlayer_packet, 0); // Y
 
-            for (const auto& [_, client] : connected_clients)
+            // envoie tous les joueurs deja co au nouveau client
+            for (const auto& [net_id, client] : connected_clients)
             {
-                send_packet(client.ip, client.port, spawn_packet);
+                if (net_id == new_client_id) {
+                    std::vector<uint8_t> spawn_OwnPlayer_packet;
+
+                    encode_uint32(spawn_OwnPlayer_packet, 1);// PacketType::SPAWN
+                    encode_uint32(spawn_OwnPlayer_packet, new_client_id); // NetworkID
+                    encode_uint32(spawn_OwnPlayer_packet, 1); // TypeID::OWNPLAYER
+                    encode_uint32(spawn_OwnPlayer_packet, 0); // X
+                    encode_uint32(spawn_OwnPlayer_packet, 0); // Y
+
+                    send_packet(client.ip, client.port, spawn_OwnPlayer_packet);
+                } else {
+                    send_packet(client.ip, client.port, spawn_otherPlayer_packet);
+                }
             }
 
+            // envoie aux autre client le nouveau client
             for (const auto& [net_id, client] : connected_clients)
             {
                 if (net_id == new_client_id) continue;
@@ -155,7 +169,7 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
 
                 encode_uint32(other_packet, 1);
                 encode_uint32(other_packet, net_id);
-                encode_uint32(other_packet, 1);
+                encode_uint32(other_packet, 2);
                 encode_uint32(other_packet, 0); // Stub (en attendant d'avoir un manager entt, qui me donnera la position)
                 encode_uint32(other_packet, 0); // Stub (meme chose)
 

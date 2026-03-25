@@ -46,8 +46,14 @@ namespace godot {
         std::thread ping_thread;
         std::atomic<bool> is_running{true};
         std::vector<uint64_t> rtt_history;
-
         uint64_t latency;
+
+        struct FrameInput {
+            uint8_t keys;
+            float aim_x;
+            float aim_y;
+        };
+        std::deque<FrameInput> input_history;
 
     protected:
         static void _bind_methods();

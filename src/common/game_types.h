@@ -17,7 +17,8 @@ namespace godot {
         SPAWN = 1,
         LEAVE = 2,
         PING = 3,
-        PONG = 4
+        PONG = 4,
+        INPUT = 5,
     };
 
     // Structure de base d'un paquet SPAWN
@@ -48,12 +49,21 @@ namespace godot {
             uint64_t t1;
         };
 
+        struct InputPacket {
+            uint32_t packet_type = 5;
+            uint32_t network_id;
+            uint32_t sequence;
+            uint8_t keys[20];
+            float aim_x[20];
+            float aim_y[20];
+        };
     #pragma pack(pop)
 
     enum TypeID {
-        PLAYER = 1,
-        ENEMY = 2,
-        PROJECTILE = 3
+        OWN_PLAYER = 1,
+        OTHER_PLAYER = 2,
+        ENEMY = 3,
+        PROJECTILE = 4
     };
 
     struct ClientInfo {
