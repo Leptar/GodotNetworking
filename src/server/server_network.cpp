@@ -1,5 +1,7 @@
 ﻿#include "server_network.h"
 
+#include <godot_cpp/variant/utility_functions.hpp>
+
 ServerNetworkManager::ServerNetworkManager(uint16_t p_port) : port(p_port) {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
@@ -299,7 +301,7 @@ void ServerNetworkManager::check_timeouts() {
 void ServerNetworkManager::broadcast_world_state() {
     std::vector<godot::EntityState> world_state = entt_manager->get_world_state();
     std::vector<uint8_t> worldStatePacket;
-    encode_uint32(worldStatePacket, 6);
+    encode_uint32(worldStatePacket, godot::WORLD_STATE);
     encode_uint32(worldStatePacket, world_state.size());
 
     for (const auto& entityState : world_state) {

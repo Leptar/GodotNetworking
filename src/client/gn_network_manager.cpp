@@ -101,7 +101,7 @@ void GDNetworkManager::_ready() {
 
         	// Construire et envoyer le paquet
         	PackedByteArray PingPacket;
-            PingPacket.resize(16);
+            PingPacket.resize(20);
             PingPacket.encode_u32(0, PING);
     	    PingPacket.encode_u32(4, local_network_id);
             PingPacket.encode_u32(8, current_ping_id);
@@ -277,7 +277,6 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
     switch (packet_type)
     {
         case SPAWN: {
-
             uint32_t typeID = data.decode_u32(8);
             uint32_t netID = data.decode_u32(4);
             auto it = type_registry.find(typeID);
