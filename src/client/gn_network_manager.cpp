@@ -116,8 +116,9 @@ void GDNetworkManager::_ready() {
 	});
 }
 
-void GDNetworkManager::_process(double delta) {
+void GDNetworkManager::_physics_process(double delta) {
     poll();
+
 
     uint8_t current_keys = 0;
     if (Input::get_singleton()->is_action_pressed("ui_up")) current_keys |= (1 << 0);
@@ -127,6 +128,7 @@ void GDNetworkManager::_process(double delta) {
 
     Vector2 mouse_pos = get_viewport()->get_mouse_position();
     FrameInput frame_input{current_keys, mouse_pos.x, mouse_pos.y};
+
     if (input_history.size() >= 20) {
         input_history.pop_front();
     }

@@ -5,12 +5,15 @@ ServerNetworkManager::ServerNetworkManager(uint16_t p_port) : port(p_port) {
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         std::cerr << "[Network] Error initializing WSAStartup" << std::endl;
     }
+
+    entt_manager = new EnttManager();
 }
 
 ServerNetworkManager::~ServerNetworkManager() {
     if (udp_socket != INVALID_SOCKET) {
         closesocket(udp_socket);
     }
+    delete entt_manager;
     WSACleanup();
 }
 
@@ -61,6 +64,7 @@ bool ServerNetworkManager::poll() {
     char buffer[65535];
     sockaddr_in sender_address;
     int sender_len = sizeof(sender_address);
+    bool bHasReceived = false;
 
     // On boucle tant qu'il y a des paquets à lire
     while (true) {
@@ -85,7 +89,7 @@ bool ServerNetworkManager::poll() {
 
         // Au lieu d'émettre un signal, on traite directement
         _on_packet_received(std::string(sender_ip), sender_port, received_data);
-        return true; // On a traité au moins un paquet
+        bHasReceived = true; // On a traité au moins un paquet
     }
 }
 
@@ -128,6 +132,8 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             info.port = sender_port;
             info.last_activity_time = std::chrono::steady_clock::now();
             connected_clients[next_network_id] = info;
+
+            entt_manager->create_entity(next_network_id, godot::OWN_PLAYER);
 
             uint32_t new_client_id = next_network_id;
             next_network_id++;
@@ -203,6 +209,7 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
                 send_packet(client.ip, client.port, LeavePacket);
             }
 
+            entt_manager->destroy_entity(network_id);
             connected_clients.erase(it);
             break;
         }
@@ -224,6 +231,22 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             encode_uint64(PongPacket, t1);
 
             send_packet(sender_ip, sender_port, PongPacket);
+
+            break;
+        }
+
+        case 5: {
+            // INPUT
+            godot::InputPacket receivedpacket;
+            memcpy(&receivedpacket, data.data(), sizeof(godot::InputPacket));
+
+
+            entt_manager->update_player_input(receivedpacket.network_id,
+                    receivedpacket.sequence,
+                    receivedpacket.keys[19],
+                    receivedpacket.aim_x[19],
+                    receivedpacket.aim_y[19]
+                    );
 
             break;
         }
@@ -254,4 +277,4 @@ void ServerNetworkManager::check_timeouts() {
             ++it;
         }
     }
-}
+};

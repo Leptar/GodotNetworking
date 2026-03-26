@@ -6,7 +6,7 @@
 #include <ws2tcpip.h>
 #include "game_types.h"
 #include <vector>
-#include <entt_manager.h>
+#include <../server/entt_manager.h>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
@@ -67,7 +67,7 @@ namespace godot {
         ~GDNetworkManager();
 
         void _ready() override;
-        void _process(double delta) override;
+        void _physics_process(double delta) override;
 
         // Bind to a port to receive data (Server or P2P Peer)
         bool bind_port(int port);

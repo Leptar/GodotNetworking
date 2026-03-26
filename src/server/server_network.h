@@ -13,6 +13,7 @@
 #include <chrono>
 
 // On inclut nos types communs (définis précédemment)
+#include "entt_manager.h"
 #include "../common/game_types.h"
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -33,6 +34,8 @@ class ServerNetworkManager {
     SOCKET udp_socket = INVALID_SOCKET;
     uint16_t port;
 
+    EnttManager* entt_manager;
+
     // Helper interne pour configurer Winsock
     void _set_non_blocking(SOCKET sock);
 
@@ -40,6 +43,11 @@ public:
     ServerNetworkManager(uint16_t port);
     ~ServerNetworkManager();
 
+
+    // Dans server_network.cpp
+    void update_game(float delta) {
+        entt_manager->update(delta);
+    }
     // Lance le serveur (équivalent de ton bind_port)
     bool start();
 
