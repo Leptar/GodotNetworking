@@ -332,6 +332,7 @@ autoplay = "IDLE"
 frame_progress = 0.33928967
 
 [node name="Camera2D" type="Camera2D" parent="CharacterBody2D" unique_id=1333194313]
+zoom = Vector2(2.5, 2.5)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CharacterBody2D" unique_id=909861890]
 position = Vector2(0, 2)
