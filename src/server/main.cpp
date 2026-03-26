@@ -27,8 +27,9 @@ int main() {
         float deltatime = (time - last_time) / 1000.0f;
         last_time = time;
 
-        // B. Update Jeu (ECS) - À venir
+        // B. Update Jeu (ECS)
         network.update_game(deltatime);
+        network.broadcast_world_state();
 
         // Sleep ~16ms (60 FPS)
         std::this_thread::sleep_for(std::chrono::milliseconds(16));

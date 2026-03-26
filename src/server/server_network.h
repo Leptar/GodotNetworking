@@ -20,7 +20,7 @@
 
 class ServerNetworkManager {
 
-    int TIMEOUT = 5;
+    int TIMEOUT = 60;
 
     struct ClientInfo {
         std::string ip;
@@ -59,6 +59,9 @@ public:
     void send_packet(const std::string& ip, int port, const std::vector<uint8_t>& data);
 
     void check_timeouts();
+
+    void broadcast_world_state();
+
 private:
     // La fonction qui traitera le paquet reçu (logique serveur)
     void _on_packet_received(const std::string& sender_ip, int sender_port, std::vector<uint8_t>& data);

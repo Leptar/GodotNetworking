@@ -19,6 +19,7 @@ namespace godot {
         PING = 3,
         PONG = 4,
         INPUT = 5,
+        WORLD_STATE = 6
     };
 
     // Structure de base d'un paquet SPAWN
@@ -38,6 +39,7 @@ namespace godot {
 
         struct PingPacket {
             uint32_t packet_type = 3; // 3 = PING
+            uint32_t network_id;
             uint32_t ping_id;
             uint64_t t0;
         };
@@ -69,6 +71,12 @@ namespace godot {
     struct ClientInfo {
         std::string ip;
         int port;
+    };
+
+    struct EntityState {
+        uint32_t network_id;
+        float x;
+        float y;
     };
 }
 

@@ -103,8 +103,9 @@ void GDNetworkManager::_ready() {
         	PackedByteArray PingPacket;
             PingPacket.resize(16);
             PingPacket.encode_u32(0, PING);
-            PingPacket.encode_u32(4, current_ping_id);
-            PingPacket.encode_u64(8, t0);
+    	    PingPacket.encode_u32(4, local_network_id);
+            PingPacket.encode_u32(8, current_ping_id);
+            PingPacket.encode_u64(12, t0);
 
         	send_packet("127.0.0.1", 8050, PingPacket);
 
@@ -346,7 +347,30 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
 
             emit_signal("_latency_updated", latency);
             UtilityFunctions::print("Actual Latency : ", latency, " ms");
+
+            break;
 		}
+
+        case WORLD_STATE: {
+            uint32_t num_entities = data.decode_u32(4);
+
+            for (uint32_t i = 0; i < num_entities; i++) {
+                uint32_t net_id = data.decode_u32(8 + i * 12);
+                float x = data.decode_float(12 + i * 12);
+                float y = data.decode_float(16 + i * 12);
+                auto it = replicated_nodes.find(net_id);
+
+                if (it == replicated_nodes.end()) {
+                    continue;
+                    // TODO : si le noeud existe pas le creer mais il faudrait envoyer le typeID de l'objet pour le spawn
+                }
+                if (it->second.is_valid()) {
+                    cast_to<Node2D>(it->second.get_node())->set_global_position(Vector2(x, y));
+                }
+            }
+
+            break;
+        }
 
         default: break;
     }

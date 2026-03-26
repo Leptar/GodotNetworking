@@ -71,6 +71,25 @@ void EnttManager::update(float deltatime) {
             pos.x += entity_speed.s * deltatime;
         }
     }
+
+    for (const auto& [net_id, context] : network_to_local_map) {
+        position& pos = registry.get<position>(context.local_entity);
+    }
 }
 
+std::vector<godot::EntityState> EnttManager::get_world_state() {
+    std::vector<godot::EntityState> world_state;
 
+    for (const auto& [net_id, context] : network_to_local_map) {
+        position& pos = registry.get<position>(context.local_entity);
+
+        godot::EntityState state;
+        state.network_id = net_id;
+        state.x = pos.x;
+        state.y = pos.y;
+
+        world_state.push_back(state);
+    }
+
+    return world_state;
+}

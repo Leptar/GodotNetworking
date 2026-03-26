@@ -2,6 +2,7 @@
 #define ENTT_MANAGER_H
 
 #include <chrono>
+#include <game_types.h>
 #include <entt/entt.hpp>
 
 
@@ -47,6 +48,8 @@ public:
     void update_player_input(uint32_t network_id, uint32_t sequence, uint8_t keys, float aim_x, float aim_y);
 
     void update(float deltatime);
+
+    std::vector<godot::EntityState> get_world_state();
 };
 
 

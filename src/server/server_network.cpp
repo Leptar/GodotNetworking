@@ -118,6 +118,11 @@ void encode_uint64(std::vector<uint8_t>& packet, uint64_t value) {
     packet.insert(packet.end(), ptr, ptr + sizeof(uint64_t));
 }
 
+void encode_float(std::vector<uint8_t>& packet, float value) {
+    uint8_t* ptr = reinterpret_cast<uint8_t*>(&value);
+    packet.insert(packet.end(), ptr, ptr + sizeof(float));
+}
+
 void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int sender_port, std::vector<uint8_t>& data) {
     if (data.empty()) return;
 
@@ -215,8 +220,15 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
         }
 
         case 3: { //PING
-            uint32_t ping_id = decode_uint32(data, 4);
-            uint64_t t0 = decode_uint64(data, 8);
+            uint32_t net_id = decode_uint32(data, 4);
+            auto it = connected_clients.find(net_id);
+            if (it == connected_clients.end()) {
+                std::cout << "[Network] Client " << sender_ip << ":" << sender_port << " not found" << std::endl;
+                break;
+            }
+            it->second.last_activity_time = std::chrono::steady_clock::now();
+            uint32_t ping_id = decode_uint32(data, 8);
+            uint64_t t0 = decode_uint64(data, 12);
 
             std::cout << "[Network] Received PING from " << sender_ip << ":" << sender_port << " with ID: " << ping_id;
             std::cout << " and timestamp: " << t0 << std::endl;
@@ -235,11 +247,16 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             break;
         }
 
-        case 5: {
-            // INPUT
+        case 5: { // INPUT
+
             godot::InputPacket receivedpacket;
             memcpy(&receivedpacket, data.data(), sizeof(godot::InputPacket));
-
+            auto it = connected_clients.find(receivedpacket.network_id);
+            if (it == connected_clients.end()) {
+                std::cout << "[Network] Client " << sender_ip << ":" << sender_port << " not found" << std::endl;
+                break;
+            }
+            it->second.last_activity_time = std::chrono::steady_clock::now();
 
             entt_manager->update_player_input(receivedpacket.network_id,
                     receivedpacket.sequence,
@@ -276,5 +293,22 @@ void ServerNetworkManager::check_timeouts() {
         } else {
             ++it;
         }
+    }
+};
+
+void ServerNetworkManager::broadcast_world_state() {
+    std::vector<godot::EntityState> world_state = entt_manager->get_world_state();
+    std::vector<uint8_t> worldStatePacket;
+    encode_uint32(worldStatePacket, 6);
+    encode_uint32(worldStatePacket, world_state.size());
+
+    for (const auto& entityState : world_state) {
+        encode_uint32(worldStatePacket, entityState.network_id);
+        encode_float(worldStatePacket, entityState.x);
+        encode_float(worldStatePacket, entityState.y);
+    }
+
+    for (const auto& [_, client] : connected_clients) {
+        send_packet(client.ip, client.port, worldStatePacket);
     }
 };
