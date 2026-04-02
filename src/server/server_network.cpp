@@ -258,7 +258,7 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
                 std::cout << "[Network] Client " << sender_ip << ":" << sender_port << " not found" << std::endl;
                 break;
             }
-            it->second.last_activity_time = std::chrono::steady_clock::now();
+            // it->second.last_activity_time = std::chrono::steady_clock::now();
 
             entt_manager->update_player_input(receivedpacket.network_id,
                     receivedpacket.sequence,

@@ -15,7 +15,7 @@ void EnttManager::create_entity(uint32_t network_id, uint32_t type_id) {
     entt::entity entity = registry.create();
     registry.emplace<position>(entity, 0.f, 0.f);
     registry.emplace<typeID>(entity, (int)type_id);
-    registry.emplace<PlayerInput>(entity, 0, 0, 0.0f, 0.0f);
+    registry.emplace<PlayerInput>(entity, 0, 0, 0, 0.0f, 0.0f);
     registry.emplace<speed>(entity, 300.f);
 
     EntityContext Context = {network_id, entity};
@@ -54,6 +54,7 @@ void EnttManager::update(float deltatime) {
 
     for (auto entity : view) {
         PlayerInput& input = view.get<PlayerInput>(entity);
+        if (input.last_sequence < input.next_sequence) { continue;}
         position& pos = view.get<position>(entity);
         speed& entity_speed = view.get<speed>(entity);
 
@@ -70,6 +71,8 @@ void EnttManager::update(float deltatime) {
         if (input.current_keys & 1 << 3) {
             pos.x += entity_speed.s * deltatime;
         }
+
+        input.next_sequence += 1;
     }
 
     for (const auto& [net_id, context] : network_to_local_map) {

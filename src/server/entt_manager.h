@@ -26,6 +26,7 @@ struct speed {
 
 struct PlayerInput {
     int last_sequence = 0;
+    int next_sequence = 0;
     int current_keys = 0;
     float aim_x = 0.0f;
     float aim_y = 0.0f;

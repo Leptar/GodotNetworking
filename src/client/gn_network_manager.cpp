@@ -120,13 +120,13 @@ void GDNetworkManager::_ready() {
 void GDNetworkManager::_physics_process(double delta) {
     poll();
 
-
     uint8_t current_keys = 0;
     if (Input::get_singleton()->is_action_pressed("ui_up")) current_keys |= (1 << 0);
     if (Input::get_singleton()->is_action_pressed("ui_down")) current_keys |= (1 << 1);
     if (Input::get_singleton()->is_action_pressed("ui_left")) current_keys |= (1 << 2);
     if (Input::get_singleton()->is_action_pressed("ui_right")) current_keys |= (1 << 3);
-
+    // UtilityFunctions::printerr("current keys : ", current_keys);
+    if (current_keys == 0) { return; }
     Vector2 mouse_pos = get_viewport()->get_mouse_position();
     FrameInput frame_input{current_keys, mouse_pos.x, mouse_pos.y};
 
@@ -263,7 +263,7 @@ void GDNetworkManager::poll()
         inet_ntop(AF_INET, &sender_address.sin_addr, sender_ip, INET_ADDRSTRLEN);
         int sender_port = ntohs(sender_address.sin_port);
         
-        UtilityFunctions::print("Received ", len, "bytes");
+        // UtilityFunctions::print("Received ", len, "bytes");
         emit_signal("packet_received", String(sender_ip), sender_port, received_data);
 		
     }
@@ -272,11 +272,12 @@ void GDNetworkManager::poll()
 void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_port, const PackedByteArray& data)
 {
     uint32_t packet_type = data.decode_u32(0);
-    UtilityFunctions::print("Paquet recu de type : ", packet_type);
+
     
     switch (packet_type)
     {
         case SPAWN: {
+            UtilityFunctions::print("Paquet recu de type : SPAWN");
             uint32_t typeID = data.decode_u32(8);
             uint32_t netID = data.decode_u32(4);
             auto it = type_registry.find(typeID);
@@ -313,6 +314,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
         }
 
         case LEAVE: {
+            UtilityFunctions::print("Paquet recu de type : LEAVE");
             uint32_t netID = data.decode_u32(4);
             auto it = replicated_nodes.find(netID);
 
@@ -328,6 +330,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
         }
 
 		case PONG: {
+            UtilityFunctions::print("Paquet recu de type : PONG");
             uint32_t ping_id = data.decode_u32(4);
             uint64_t t0 = data.decode_u64(8);
             uint64_t t1 = data.decode_u64(16);

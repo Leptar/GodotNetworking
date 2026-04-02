@@ -28,6 +28,7 @@ int main() {
         last_time = time;
 
         // B. Update Jeu (ECS)
+        network.check_timeouts();
         network.update_game(deltatime);
         network.broadcast_world_state();
 
