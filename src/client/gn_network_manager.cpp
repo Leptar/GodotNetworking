@@ -4,6 +4,7 @@
 #include <windows.h> 
 #include "gn_network_manager.h"
 
+#include <iostream>
 #include <numeric>
 #include <godot_cpp/classes/canvas_item.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -73,14 +74,8 @@ GDNetworkManager::~GDNetworkManager() {
 }
 
 void GDNetworkManager::_ready() {
-    Ref<PackedScene> own_player_scene = ResourceLoader::get_singleton()->load("res://scenes/ownplayer.tscn");
-    Ref<PackedScene> other_player_scene = ResourceLoader::get_singleton()->load("res://scenes/otherplayer.tscn");
-    register_type(OWN_PLAYER, own_player_scene);
-    register_type(OTHER_PLAYER, other_player_scene);
-
-
-
-    // TODO : recuperer l'instance du entt_Manager (surement)
+    Ref<PackedScene> player_scene = ResourceLoader::get_singleton()->load("res://scenes/player.tscn");
+    register_type(PLAYER, player_scene);
 
     this->connect("packet_received", Callable(this, "_on_packet_received"));
     bIsBinded = bind_port(0);
@@ -290,21 +285,29 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             if (it != type_registry.end()) {
                 Ref<PackedScene> scene = it->second;
                 Node* new_entity = scene->instantiate();
+
                 float x = data.decode_float(12);
                 float y = data.decode_float(16);
+                UtilityFunctions::print("Position : ", x, y);
 
-                if (Node2D *node_2d = Object::cast_to<Node2D>(new_entity)) {
+                if (Node2D *node_2d = cast_to<Node2D>(new_entity)) {
                     node_2d->set_position(Vector2(x, y));
-
-                    bool is_mine = netID == local_network_id;
-                    node_2d->set("is_local_authority", is_mine);
                 }
+
                 if (SceneTree *tree = get_tree()) {
                     Window *root = tree->get_root();
                     root->add_child(new_entity);
                     register_node(netID, new_entity);
                 }
 
+                if (typeID == PLAYER) {
+                    UtilityFunctions::print(netID == local_network_id);
+                    bool local_Player = netID == local_network_id;
+                    Node* body = new_entity->get_node<Node>("Body2D");
+                    body->set("bIsLocalPlayer", local_Player);
+                    body->call("enable_cam");
+                    UtilityFunctions::print(body->get("bIsLocalPlayer"));
+                }
                 debug_print_nodes();
             } else {
                 UtilityFunctions::print("Received unknown typeID");
@@ -330,10 +333,10 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
         }
 
 		case PONG: {
-            UtilityFunctions::print("Paquet recu de type : PONG");
-            uint32_t ping_id = data.decode_u32(4);
+            // UtilityFunctions::print("Paquet recu de type : PONG");
+            // uint32_t ping_id = data.decode_u32(4);
             uint64_t t0 = data.decode_u64(8);
-            uint64_t t1 = data.decode_u64(16);
+            // uint64_t t1 = data.decode_u64(16);
 
             auto now = std::chrono::steady_clock::now().time_since_epoch();
             uint64_t t2 = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
@@ -348,7 +351,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             latency = std::accumulate(rtt_history.begin(), rtt_history.end(), 0) / rtt_history.size();
 
             emit_signal("_latency_updated", latency);
-            UtilityFunctions::print("Actual Latency : ", latency, " ms");
+            // UtilityFunctions::print("Actual Latency : ", latency, " ms");
 
             break;
 		}
@@ -357,17 +360,26 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             uint32_t num_entities = data.decode_u32(4);
 
             for (uint32_t i = 0; i < num_entities; i++) {
-                uint32_t net_id = data.decode_u32(8 + i * 12);
-                float x = data.decode_float(12 + i * 12);
-                float y = data.decode_float(16 + i * 12);
+                uint32_t net_id = data.decode_u32(8 + i * 16);
+                uint32_t type = data.decode_u32(12 + i * 16);
+                float x = data.decode_float(16 + i * 16);
+                float y = data.decode_float(20 + i * 16);
+                //UtilityFunctions::print("coordonnée : ", x, " / ", y);
                 auto it = replicated_nodes.find(net_id);
-
                 if (it == replicated_nodes.end()) {
                     continue;
-                    // TODO : si le noeud existe pas le creer mais il faudrait envoyer le typeID de l'objet pour le spawn
+                    // TODO : si le noeud existe le creer
                 }
                 if (it->second.is_valid()) {
-                    cast_to<Node2D>(it->second.get_node())->set_global_position(Vector2(x, y));
+                    if (type == PLAYER) {
+                        Node2D* node = cast_to<Node2D>(it->second.get_node());
+                        Node* body = node->get_node<Node>("Body2D");
+                        if (net_id != local_network_id) {
+                            body->set("direction", Vector2(x, y) - node->get_position());
+                        }
+                    } else {
+                        cast_to<Node2D>(it->second.get_node())->set_global_position(Vector2(x, y));
+                    }
                 }
             }
 
@@ -414,7 +426,7 @@ void GDNetworkManager::_notification(int p_notification) {
             LeavePacket.resize(12);
             LeavePacket.encode_u32(0, LEAVE);
             LeavePacket.encode_u32(4, local_network_id);
-            LeavePacket.encode_u32(8, OWN_PLAYER);
+            LeavePacket.encode_u32(8, PLAYER);
 
             send_packet("127.0.0.1", 8050, LeavePacket);
 

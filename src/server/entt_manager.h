@@ -12,7 +12,7 @@ struct EntityContext {
 };
 
 struct typeID {
-    int type_id;
+    uint32_t type_id;
 };
 
 struct position
@@ -45,6 +45,8 @@ public:
     void create_entity(uint32_t network_id, uint32_t type_id);
 
     void destroy_entity(uint32_t network_id);
+
+    position& get_entity_pos(uint32_t network_id);
 
     void update_player_input(uint32_t network_id, uint32_t sequence, uint8_t keys, float aim_x, float aim_y);
 

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bfj02d6t245ji"]
 
-[ext_resource type="Script" uid="uid://emr3ju5axmor" path="res://scenes/pinglabel.gd" id="1_o5qli"]
+[ext_resource type="Script" uid="uid://emr3ju5axmor" path="res://Scripts/pinglabel.gd" id="1_o5qli"]
 
 [sub_resource type="CanvasTexture" id="CanvasTexture_o5qli"]
 specular_color = Color(0.955406, 0.47007173, 0.6691702, 1)

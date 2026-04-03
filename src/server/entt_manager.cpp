@@ -1,5 +1,7 @@
 #include "entt_manager.h"
 
+#include <iostream>
+
 #include "game_types.h"
 
 
@@ -14,7 +16,7 @@ EnttManager::~EnttManager() {
 void EnttManager::create_entity(uint32_t network_id, uint32_t type_id) {
     entt::entity entity = registry.create();
     registry.emplace<position>(entity, 0.f, 0.f);
-    registry.emplace<typeID>(entity, (int)type_id);
+    registry.emplace<typeID>(entity, type_id);
     registry.emplace<PlayerInput>(entity, 0, 0, 0, 0.0f, 0.0f);
     registry.emplace<speed>(entity, 300.f);
 
@@ -29,6 +31,11 @@ void EnttManager::destroy_entity(uint32_t network_id) {
         registry.destroy(it->second.local_entity); // Détruit l'entité dans EnTT
         network_to_local_map.erase(it);            // Retire l'ID de la map
     }
+}
+
+position& EnttManager::get_entity_pos(uint32_t network_id) {
+    auto it = network_to_local_map.find(network_id);
+    return registry.get<position>(it->second.local_entity);
 }
 
 void EnttManager::update_player_input(uint32_t network_id, uint32_t sequence, uint8_t keys, float aim_x, float aim_y) {
@@ -72,12 +79,11 @@ void EnttManager::update(float deltatime) {
             pos.x += entity_speed.s * deltatime;
         }
 
+        std::cout << pos.x << " " << pos.y << std::endl;
+
         input.next_sequence += 1;
     }
 
-    for (const auto& [net_id, context] : network_to_local_map) {
-        position& pos = registry.get<position>(context.local_entity);
-    }
 }
 
 std::vector<godot::EntityState> EnttManager::get_world_state() {
@@ -85,9 +91,11 @@ std::vector<godot::EntityState> EnttManager::get_world_state() {
 
     for (const auto& [net_id, context] : network_to_local_map) {
         position& pos = registry.get<position>(context.local_entity);
+        typeID& type = registry.get<typeID>(context.local_entity);
 
         godot::EntityState state;
         state.network_id = net_id;
+        state.type_id = type.type_id;
         state.x = pos.x;
         state.y = pos.y;
 

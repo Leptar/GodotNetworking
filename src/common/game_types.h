@@ -62,10 +62,10 @@ namespace godot {
     #pragma pack(pop)
 
     enum TypeID {
-        OWN_PLAYER = 1,
-        OTHER_PLAYER = 2,
-        ENEMY = 3,
-        PROJECTILE = 4
+        PLAYER = 1,
+        ENEMY = 2,
+        PROJECTILE = 3,
+        WORLD_OBJECT = 4
     };
 
     struct ClientInfo {
@@ -75,8 +75,10 @@ namespace godot {
 
     struct EntityState {
         uint32_t network_id;
+        uint32_t type_id;
         float x;
         float y;
+
     };
 }
 

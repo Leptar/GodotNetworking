@@ -140,51 +140,41 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             info.last_activity_time = std::chrono::steady_clock::now();
             connected_clients[next_network_id] = info;
 
-            entt_manager->create_entity(next_network_id, godot::OWN_PLAYER);
+            entt_manager->create_entity(next_network_id, godot::PLAYER);
 
             uint32_t new_client_id = next_network_id;
             next_network_id++;
             std::cout << "[Server] New client connected. Assigned NetworkID: " << new_client_id << std::endl;
 
             // paquet SPAWN
-            std::vector<uint8_t> spawn_otherPlayer_packet;
+            std::vector<uint8_t> Player_packet;
 
-            encode_uint32(spawn_otherPlayer_packet, 1);// PacketType::SPAWN
-            encode_uint32(spawn_otherPlayer_packet, new_client_id); // NetworkID
-            encode_uint32(spawn_otherPlayer_packet, 2); // TypeID::OTHERPLAYER
-            encode_uint32(spawn_otherPlayer_packet, 0); // X
-            encode_uint32(spawn_otherPlayer_packet, 0); // Y
+            encode_uint32(Player_packet, 1);// PacketType::SPAWN
+            encode_uint32(Player_packet, new_client_id); // NetworkID
+            encode_uint32(Player_packet, 1); // TypeID::PLAYER
+            encode_float(Player_packet, 0.f); // X
+            encode_float(Player_packet, 0.f); // Y
 
             // envoie tous les joueurs deja co au nouveau client
             for (const auto& [net_id, client] : connected_clients)
             {
-                if (net_id == new_client_id) {
-                    std::vector<uint8_t> spawn_OwnPlayer_packet;
-
-                    encode_uint32(spawn_OwnPlayer_packet, 1);// PacketType::SPAWN
-                    encode_uint32(spawn_OwnPlayer_packet, new_client_id); // NetworkID
-                    encode_uint32(spawn_OwnPlayer_packet, 1); // TypeID::OWNPLAYER
-                    encode_uint32(spawn_OwnPlayer_packet, 0); // X
-                    encode_uint32(spawn_OwnPlayer_packet, 0); // Y
-
-                    send_packet(client.ip, client.port, spawn_OwnPlayer_packet);
-                } else {
-                    send_packet(client.ip, client.port, spawn_otherPlayer_packet);
-                }
+                send_packet(client.ip, client.port, Player_packet);
             }
 
-            // envoie aux autre client le nouveau client
+            // envoie les autre client au nouveau client
             for (const auto& [net_id, client] : connected_clients)
             {
                 if (net_id == new_client_id) continue;
 
+                position& entity_pos = entt_manager->get_entity_pos(net_id);
+                std::cout << entity_pos.x << " " << entity_pos.y << std::endl;
                 std::vector<uint8_t> other_packet;
 
                 encode_uint32(other_packet, 1);
                 encode_uint32(other_packet, net_id);
-                encode_uint32(other_packet, 2);
-                encode_uint32(other_packet, 0); // Stub (en attendant d'avoir un manager entt, qui me donnera la position)
-                encode_uint32(other_packet, 0); // Stub (meme chose)
+                encode_uint32(other_packet, 1);
+                encode_float(other_packet, entity_pos.x);
+                encode_float(other_packet, entity_pos.y);
 
                 send_packet(sender_ip, sender_port, other_packet);
 
@@ -259,12 +249,13 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
                 break;
             }
             // it->second.last_activity_time = std::chrono::steady_clock::now();
+            std::cout << "[Network] Received Input from " << receivedpacket.network_id << std::endl;
 
             entt_manager->update_player_input(receivedpacket.network_id,
                     receivedpacket.sequence,
-                    receivedpacket.keys[19],
-                    receivedpacket.aim_x[19],
-                    receivedpacket.aim_y[19]
+                    receivedpacket.keys[0],
+                    receivedpacket.aim_x[0],
+                    receivedpacket.aim_y[0]
                     );
 
             break;
@@ -306,8 +297,10 @@ void ServerNetworkManager::broadcast_world_state() {
 
     for (const auto& entityState : world_state) {
         encode_uint32(worldStatePacket, entityState.network_id);
+        encode_uint32(worldStatePacket, entityState.type_id);
         encode_float(worldStatePacket, entityState.x);
         encode_float(worldStatePacket, entityState.y);
+
     }
 
     for (const auto& [_, client] : connected_clients) {
