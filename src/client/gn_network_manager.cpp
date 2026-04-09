@@ -16,6 +16,8 @@
 #include <godot_cpp/classes/node2d.hpp>
 #include <godot_cpp/classes/input.hpp>
 
+#include "../../lib/godot-cpp/include/godot_cpp/variant/vector2.hpp"
+
 using namespace godot;
 
 #ifdef _WIN32
@@ -121,7 +123,7 @@ void GDNetworkManager::_physics_process(double delta) {
     if (Input::get_singleton()->is_action_pressed("ui_left")) current_keys |= (1 << 2);
     if (Input::get_singleton()->is_action_pressed("ui_right")) current_keys |= (1 << 3);
     // UtilityFunctions::printerr("current keys : ", current_keys);
-    if (current_keys == 0) { return; }
+    // if (current_keys == 0) { return; }
     Vector2 mouse_pos = get_viewport()->get_mouse_position();
     FrameInput frame_input{current_keys, mouse_pos.x, mouse_pos.y};
 
@@ -136,8 +138,8 @@ void GDNetworkManager::_physics_process(double delta) {
     input_packet.packet_type = INPUT;
     input_packet.network_id = local_network_id;
     input_packet.sequence = current_sequence;
-    int i = 0;
-    for (; i < input_history.size(); i++) {
+
+    for (int i = 0; i < input_history.size(); i++) {
         input_packet.keys[i] = input_history[i].keys;
         input_packet.aim_x[i] = input_history[i].aim_x;
         input_packet.aim_y[i] = input_history[i].aim_y;
@@ -291,12 +293,14 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
                 UtilityFunctions::print("Position : ", x, y);
 
                 if (Node2D *node_2d = cast_to<Node2D>(new_entity)) {
-                    node_2d->set_position(Vector2(x, y));
+                    node_2d->set_global_position(Vector2(x, y));
+
                 }
 
                 if (SceneTree *tree = get_tree()) {
                     Window *root = tree->get_root();
                     root->add_child(new_entity);
+                    new_entity->set_physics_process(true);
                     register_node(netID, new_entity);
                 }
 
@@ -304,7 +308,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
                     UtilityFunctions::print(netID == local_network_id);
                     bool local_Player = netID == local_network_id;
                     Node* body = new_entity->get_node<Node>("Body2D");
-                    body->set("bIsLocalPlayer", local_Player);
+                    body->call("set_local_player", local_Player);
                     body->call("enable_cam");
                     UtilityFunctions::print(body->get("bIsLocalPlayer"));
                 }
@@ -364,18 +368,22 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
                 uint32_t type = data.decode_u32(12 + i * 16);
                 float x = data.decode_float(16 + i * 16);
                 float y = data.decode_float(20 + i * 16);
+                Vector2 pos = Vector2(x, y);
                 //UtilityFunctions::print("coordonnée : ", x, " / ", y);
                 auto it = replicated_nodes.find(net_id);
                 if (it == replicated_nodes.end()) {
                     continue;
                     // TODO : si le noeud existe le creer
                 }
+
                 if (it->second.is_valid()) {
                     if (type == PLAYER) {
                         Node2D* node = cast_to<Node2D>(it->second.get_node());
-                        Node* body = node->get_node<Node>("Body2D");
+                        Node2D* body = node->get_node<Node2D>("Body2D");
+                        Vector2 direction = pos - body->get_position();
                         if (net_id != local_network_id) {
-                            body->set("direction", Vector2(x, y) - node->get_position());
+                            body->set("target_pos", pos);
+                            body->set("direction", direction);
                         }
                     } else {
                         cast_to<Node2D>(it->second.get_node())->set_global_position(Vector2(x, y));
