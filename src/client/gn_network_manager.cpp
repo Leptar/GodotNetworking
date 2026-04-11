@@ -380,10 +380,11 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
                     if (type == PLAYER) {
                         Node2D* node = cast_to<Node2D>(it->second.get_node());
                         Node2D* body = node->get_node<Node2D>("Body2D");
-                        Vector2 direction = pos - body->get_position();
+                        Vector2 direction = pos - body->get_global_position();
                         if (net_id != local_network_id) {
                             body->set("target_pos", pos);
                             body->set("direction", direction);
+
                         }
                     } else {
                         cast_to<Node2D>(it->second.get_node())->set_global_position(Vector2(x, y));
