@@ -41,6 +41,7 @@ namespace godot {
         void debug_print_nodes();
 
         std::unordered_map<uint32_t, GDReplicatedNode> replicated_nodes;
+        
         std::unordered_map<uint32_t, Ref<PackedScene>> type_registry;
 
         std::thread ping_thread;

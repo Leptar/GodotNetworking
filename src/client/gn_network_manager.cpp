@@ -373,7 +373,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
                 auto it = replicated_nodes.find(net_id);
                 if (it == replicated_nodes.end()) {
                     continue;
-                    // TODO : si le noeud existe le creer
+                    // TODO : si le noeud existe pas le creer
                 }
 
                 if (it->second.is_valid()) {
@@ -390,6 +390,8 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
                         cast_to<Node2D>(it->second.get_node())->set_global_position(Vector2(x, y));
                     }
                 }
+
+                // TODO : Save la snapshot actuel (c'est a dire tout le contenue de replicated nodes)
             }
 
             break;
