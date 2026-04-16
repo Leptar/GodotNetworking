@@ -12,6 +12,10 @@
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/variant/string.hpp>
 
+#include "../../../../../../../Program Files/Microsoft Visual Studio/18/Insiders/VC/Tools/MSVC/14.50.35717/include/cstdint"
+#include "../common/game_types.h"
+#include "godot_cpp/classes/time.hpp"
+
 namespace godot {
     
 	struct GDReplicatedNode {
@@ -40,8 +44,9 @@ namespace godot {
 
         void debug_print_nodes();
 
+        std::deque<WorldStatePacket> frames;
+
         std::unordered_map<uint32_t, GDReplicatedNode> replicated_nodes;
-        
         std::unordered_map<uint32_t, Ref<PackedScene>> type_registry;
 
         std::thread ping_thread;
@@ -57,6 +62,16 @@ namespace godot {
 
         std::deque<FrameInput> input_history{};
         uint32_t current_sequence = 0;
+
+        Time* time;
+        double render_frame = 0.0;
+        bool is_clock_synced = false;
+
+        void draw();
+
+        void drawFrame(WorldStatePacket& packet);
+
+        static WorldStatePacket interpolation(WorldStatePacket packet1, WorldStatePacket packet2, float lambda);
 
     protected:
         static void _bind_methods();

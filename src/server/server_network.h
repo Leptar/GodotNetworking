@@ -20,7 +20,8 @@
 
 class ServerNetworkManager {
 
-    int TIMEOUT = 60;
+    uint32_t next_frame_id = -1;
+    int TIMEOUT = 30;
 
     struct ClientInfo {
         std::string ip;

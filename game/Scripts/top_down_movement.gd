@@ -12,7 +12,6 @@ var target_pos = Vector2.ZERO
 func _ready() -> void:
 	camera.enabled = false
 		
-
 func set_local_player(IsLocalPlayer):
 	bIsLocalPlayer = IsLocalPlayer
 
@@ -20,7 +19,7 @@ func enable_cam():
 	camera.enabled = true
 
 func _physics_process(_delta):
-	# 1. Récupérer la direction (Input)
+# 1. Récupérer la direction (Input)
 	if bIsLocalPlayer :
 		direction = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	
@@ -34,6 +33,7 @@ func _physics_process(_delta):
 		velocity = Vector2.ZERO
 	
 	direction.normalized()
+	
 	# 3. Gérer les animations
 	update_animation()
 

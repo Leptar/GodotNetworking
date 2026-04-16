@@ -252,7 +252,6 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             std::cout << "[Network] Received Input from " << receivedpacket.network_id << std::endl;
 
             entt_manager->update_player_input(receivedpacket.network_id,
-                    receivedpacket.sequence,
                     receivedpacket.keys[0],
                     receivedpacket.aim_x[0],
                     receivedpacket.aim_y[0]
@@ -293,6 +292,7 @@ void ServerNetworkManager::broadcast_world_state() {
     std::vector<godot::EntityState> world_state = entt_manager->get_world_state();
     std::vector<uint8_t> worldStatePacket;
     encode_uint32(worldStatePacket, godot::WORLD_STATE);
+    encode_uint32(worldStatePacket, next_frame_id++);
     encode_uint32(worldStatePacket, world_state.size());
 
     for (const auto& entityState : world_state) {
@@ -300,7 +300,6 @@ void ServerNetworkManager::broadcast_world_state() {
         encode_uint32(worldStatePacket, entityState.type_id);
         encode_float(worldStatePacket, entityState.x);
         encode_float(worldStatePacket, entityState.y);
-
     }
 
     for (const auto& [_, client] : connected_clients) {

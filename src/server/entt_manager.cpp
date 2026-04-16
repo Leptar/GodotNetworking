@@ -17,7 +17,7 @@ void EnttManager::create_entity(uint32_t network_id, uint32_t type_id) {
     entt::entity entity = registry.create();
     registry.emplace<position>(entity, 0.f, 0.f);
     registry.emplace<typeID>(entity, type_id);
-    registry.emplace<PlayerInput>(entity, 0, 0, 0, 0.0f, 0.0f);
+    registry.emplace<PlayerInput>(entity, 0, 0, 0.0f, 0.0f);
     registry.emplace<speed>(entity, 300.f);
 
     EntityContext Context = {network_id, entity};
@@ -38,18 +38,14 @@ position& EnttManager::get_entity_pos(uint32_t network_id) {
     return registry.get<position>(it->second.local_entity);
 }
 
-void EnttManager::update_player_input(uint32_t network_id, uint32_t sequence, uint8_t keys, float aim_x, float aim_y) {
+void EnttManager::update_player_input(uint32_t network_id, uint8_t keys, float aim_x, float aim_y) {
     auto it = network_to_local_map.find(network_id);
     if (it == network_to_local_map.end()) {
         return;
     }
 
     PlayerInput& input = registry.get<PlayerInput>(it->second.local_entity);
-    if (input.last_sequence >= sequence) {
-        return;
-    }
 
-    input.last_sequence = sequence;
     input.current_keys = keys;
     input.aim_x = aim_x;
     input.aim_y = aim_y;
@@ -61,7 +57,7 @@ void EnttManager::update(float deltatime) {
 
     for (auto entity : view) {
         PlayerInput& input = view.get<PlayerInput>(entity);
-        if (input.last_sequence < input.next_sequence) { continue;}
+
         position& pos = view.get<position>(entity);
         speed& entity_speed = view.get<speed>(entity);
 
@@ -79,9 +75,8 @@ void EnttManager::update(float deltatime) {
             pos.x += entity_speed.s * deltatime;
         }
 
-        std::cout << pos.x << " " << pos.y << std::endl;
+        //std::cout << pos.x << " " << pos.y << std::endl;
 
-        input.next_sequence += 1;
     }
 
 }

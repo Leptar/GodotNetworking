@@ -8,9 +8,11 @@
 
 #include <cstdint> // Pour uint32_t
 #include <string>
+#include <vector>
 
 
 namespace godot {
+    struct EntityState;
 
     enum PacketType {
         JOIN = 0,
@@ -54,10 +56,17 @@ namespace godot {
         struct InputPacket {
             uint32_t packet_type = 5;
             uint32_t network_id;
-            uint32_t sequence;
             uint8_t keys[20];
             float aim_x[20];
             float aim_y[20];
+        };
+
+        struct WorldStatePacket {
+            uint32_t packet_type = 6;
+            uint32_t frame_id;
+            uint32_t size;
+            std::vector<EntityState> entities;
+
         };
     #pragma pack(pop)
 

@@ -4,7 +4,6 @@
 #include <windows.h> 
 #include "gn_network_manager.h"
 
-#include <iostream>
 #include <numeric>
 #include <godot_cpp/classes/canvas_item.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -15,7 +14,10 @@
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/node2d.hpp>
 #include <godot_cpp/classes/input.hpp>
+#include <godot_cpp/classes/time.hpp>
 
+#include "../../lib/godot-cpp/gen/include/godot_cpp/variant/utility_functions.hpp"
+#include "../../lib/godot-cpp/include/godot_cpp/core/math.hpp"
 #include "../../lib/godot-cpp/include/godot_cpp/variant/vector2.hpp"
 
 using namespace godot;
@@ -38,6 +40,8 @@ struct GD_WSASockInitializer
     }
 };
 #endif
+
+
 
 void GDNetworkManager::_bind_methods() {
     ADD_SIGNAL(MethodInfo("packet_received", 
@@ -76,6 +80,8 @@ GDNetworkManager::~GDNetworkManager() {
 }
 
 void GDNetworkManager::_ready() {
+    time = Time::get_singleton();
+
     Ref<PackedScene> player_scene = ResourceLoader::get_singleton()->load("res://scenes/player.tscn");
     register_type(PLAYER, player_scene);
 
@@ -117,6 +123,24 @@ void GDNetworkManager::_ready() {
 void GDNetworkManager::_physics_process(double delta) {
     poll();
 
+    if (!is_clock_synced && frames.size() >= 3) {
+        is_clock_synced = true;
+        render_frame = frames.back().frame_id - 2.0;
+    }
+
+    if (is_clock_synced) {
+        double play_speed = 1.0;
+
+        if (frames.size() <= 2) {
+            play_speed = 0.90;
+        }
+        else if (frames.size() >= 5) {
+            play_speed = 1.10;
+        }
+
+        render_frame += delta * 60.0 * play_speed;
+    }
+
     uint8_t current_keys = 0;
     if (Input::get_singleton()->is_action_pressed("ui_up")) current_keys |= (1 << 0);
     if (Input::get_singleton()->is_action_pressed("ui_down")) current_keys |= (1 << 1);
@@ -137,12 +161,13 @@ void GDNetworkManager::_physics_process(double delta) {
     InputPacket input_packet{};
     input_packet.packet_type = INPUT;
     input_packet.network_id = local_network_id;
-    input_packet.sequence = current_sequence;
 
-    for (int i = 0; i < input_history.size(); i++) {
-        input_packet.keys[i] = input_history[i].keys;
-        input_packet.aim_x[i] = input_history[i].aim_x;
-        input_packet.aim_y[i] = input_history[i].aim_y;
+    int index = 0;
+    for (auto it = input_history.rbegin(); it != input_history.rend(); ++it) {
+        input_packet.keys[index] = it->keys;
+        input_packet.aim_x[index] = it->aim_x;
+        input_packet.aim_y[index] = it->aim_y;
+        index++;
     }
 
     PackedByteArray data;
@@ -151,6 +176,115 @@ void GDNetworkManager::_physics_process(double delta) {
     memcpy(data.ptrw(), &input_packet, sizeof(InputPacket));
 
     send_packet("127.0.0.1", 8050, data);
+
+    if (is_clock_synced && frames.size() >= 3) {
+        draw();
+    }
+}
+
+void GDNetworkManager::draw() {
+    double FrameActuel = render_frame;
+    /*UtilityFunctions::printerr("FA = ", FrameActuel);
+    FrameActuel = std::round(FrameActuel * 10.0) / 10.0;*/
+
+    if (FrameActuel > static_cast<double>(frames.back().frame_id)) {
+        UtilityFunctions::printerr("Network jitter (lag) : en attente du serveur...");
+
+        WorldStatePacket interpolated_packet = interpolation(frames.at(1), frames.at(2), 1.0);
+        drawFrame(interpolated_packet);
+        is_clock_synced = false;
+
+    } else if (FrameActuel >= static_cast<double>(frames.front().frame_id)
+        && FrameActuel <= static_cast<double>(frames.at(1).frame_id)) {
+        WorldStatePacket interpolated_packet;
+        interpolated_packet =
+            interpolation(frames.at(0), frames.at(1), FrameActuel-frames.at(0).frame_id);
+        UtilityFunctions::printerr("frame draw between 0 and 1");
+        drawFrame(interpolated_packet);
+
+    } else if (FrameActuel >= static_cast<double>(frames.at(1).frame_id)
+        && FrameActuel <= static_cast<double>(frames.at(2).frame_id)) {
+        WorldStatePacket interpolated_packet;
+        interpolated_packet =
+            interpolation(frames.at(1), frames.at(2), FrameActuel-frames.at(1).frame_id);
+        UtilityFunctions::printerr("frame draw between 1 and 2");
+        drawFrame(interpolated_packet);
+
+    } else {
+        UtilityFunctions::printerr("frame dropped");
+        is_clock_synced = false;
+    }
+
+}
+
+
+void GDNetworkManager::drawFrame(WorldStatePacket &packet) {
+    UtilityFunctions::printerr("GDNetworkManager::drawFrame : called");
+
+    for (auto entity : packet.entities) {
+        Vector2 pos = Vector2(entity.x, entity.y);
+
+        auto it = replicated_nodes.find(entity.network_id);
+        if (it == replicated_nodes.end()) {
+            UtilityFunctions::printerr("GDNetworkManager::drawFrame : node not find");
+            continue;
+            // TODO : si le noeud existe pas le creer
+        }
+
+        if (it->second.is_valid()) {
+            if (entity.type_id == PLAYER) {
+                Node2D* node = cast_to<Node2D>(it->second.get_node());
+                Node2D* body = node->get_node<Node2D>("Body2D");
+
+                if (entity.network_id != local_network_id) {
+                    Vector2 direction = pos - body->get_global_position();
+                    UtilityFunctions::printerr("set target pos et direction : ", pos, " / ",direction);
+                    body->set("target_pos", pos);
+                    body->set("direction", direction);
+                }
+            } else {
+                cast_to<Node2D>(it->second.get_node())->set_global_position(pos);
+            }
+        }
+    }
+
+    for (const auto& [key, value] : replicated_nodes) {
+        auto it = replicated_nodes.find(key);
+        if (it == replicated_nodes.end()) {
+            continue; // TODO Delete node
+        }
+    }
+}
+
+WorldStatePacket GDNetworkManager::interpolation(WorldStatePacket packet1, WorldStatePacket packet2, float lambda) {
+
+    if (lambda <= 0.0) return packet1;
+    if (lambda >= 1.0) return packet2;
+
+    WorldStatePacket interpolated_packet;
+    EntityState entity;
+
+    for (auto packet1_entity : packet1.entities) {
+        entity.network_id = packet1_entity.network_id;
+        auto it = std::find_if(packet2.entities.begin(), packet2.entities.end(),
+            [entity](EntityState ent) {return ent.network_id == entity.network_id; });
+        if (it != packet2.entities.end()) {
+            entity.type_id = packet1_entity.type_id;
+            entity.x = Math::lerp(packet1_entity.x, it->x, lambda);
+            entity.y = Math::lerp(packet1_entity.y, it->y, lambda);
+        } else {
+            entity.type_id = packet1_entity.type_id;
+            entity.x = packet1_entity.x;
+            entity.y = packet1_entity.y;
+        }
+
+        interpolated_packet.entities.push_back(entity);
+
+    }
+
+    interpolated_packet.frame_id = 0;
+    interpolated_packet.size = interpolated_packet.entities.size();
+    return interpolated_packet;
 }
 
 void GDNetworkManager::_close_socket() {
@@ -352,7 +486,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             }
             rtt_history.push_back(rtt);
 
-            latency = std::accumulate(rtt_history.begin(), rtt_history.end(), 0) / rtt_history.size();
+            latency = std::accumulate(rtt_history.begin(), rtt_history.end(), 0ULL) / rtt_history.size();
 
             emit_signal("_latency_updated", latency);
             // UtilityFunctions::print("Actual Latency : ", latency, " ms");
@@ -361,38 +495,36 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
 		}
 
         case WORLD_STATE: {
-            uint32_t num_entities = data.decode_u32(4);
+
+            uint32_t frame_id = data.decode_u32(4);
+
+            if (frames.size() > 0 && frame_id <= frames.back().frame_id) {
+                break;
+            }
+
+            uint32_t num_entities = data.decode_u32(8);
+            std::vector<EntityState> entities;
+            EntityState entity;
 
             for (uint32_t i = 0; i < num_entities; i++) {
-                uint32_t net_id = data.decode_u32(8 + i * 16);
-                uint32_t type = data.decode_u32(12 + i * 16);
-                float x = data.decode_float(16 + i * 16);
-                float y = data.decode_float(20 + i * 16);
-                Vector2 pos = Vector2(x, y);
-                //UtilityFunctions::print("coordonnée : ", x, " / ", y);
-                auto it = replicated_nodes.find(net_id);
-                if (it == replicated_nodes.end()) {
-                    continue;
-                    // TODO : si le noeud existe pas le creer
-                }
+                entity.network_id = data.decode_u32(12 + i * 16);
+                entity.type_id = data.decode_u32(16 + i * 16);
+                entity.x = data.decode_float(20 + i * 16);
+                entity.y = data.decode_float(24 + i * 16);
 
-                if (it->second.is_valid()) {
-                    if (type == PLAYER) {
-                        Node2D* node = cast_to<Node2D>(it->second.get_node());
-                        Node2D* body = node->get_node<Node2D>("Body2D");
-                        Vector2 direction = pos - body->get_global_position();
-                        if (net_id != local_network_id) {
-                            body->set("target_pos", pos);
-                            body->set("direction", direction);
-
-                        }
-                    } else {
-                        cast_to<Node2D>(it->second.get_node())->set_global_position(Vector2(x, y));
-                    }
-                }
-
-                // TODO : Save la snapshot actuel (c'est a dire tout le contenue de replicated nodes)
+                entities.push_back(entity);
             }
+
+            WorldStatePacket frame_packet;
+            frame_packet.frame_id = frame_id;
+            frame_packet.size = num_entities;
+            frame_packet.entities = entities;
+
+            if (frames.size() > 3) {
+                frames.pop_front();
+            }
+
+            frames.push_back(frame_packet);
 
             break;
         }
@@ -448,3 +580,4 @@ void GDNetworkManager::_notification(int p_notification) {
     }
 
 }
+
