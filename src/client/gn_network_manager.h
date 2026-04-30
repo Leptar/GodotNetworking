@@ -66,6 +66,7 @@ namespace godot {
         Time* time;
         double render_frame = 0.0;
         bool is_clock_synced = false;
+        const int MAX_BUFFER_SIZE = 20;
 
         void draw();
 

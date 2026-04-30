@@ -199,7 +199,7 @@ void GDNetworkManager::draw() {
         WorldStatePacket interpolated_packet;
         interpolated_packet =
             interpolation(frames.at(0), frames.at(1), FrameActuel-frames.at(0).frame_id);
-        UtilityFunctions::printerr("frame draw between 0 and 1");
+        //UtilityFunctions::printerr("frame draw between 0 and 1");
         drawFrame(interpolated_packet);
 
     } else if (FrameActuel >= static_cast<double>(frames.at(1).frame_id)
@@ -207,11 +207,11 @@ void GDNetworkManager::draw() {
         WorldStatePacket interpolated_packet;
         interpolated_packet =
             interpolation(frames.at(1), frames.at(2), FrameActuel-frames.at(1).frame_id);
-        UtilityFunctions::printerr("frame draw between 1 and 2");
+        //UtilityFunctions::printerr("frame draw between 1 and 2");
         drawFrame(interpolated_packet);
 
     } else {
-        UtilityFunctions::printerr("frame dropped");
+        //UtilityFunctions::printerr("frame dropped");
         is_clock_synced = false;
     }
 
@@ -219,14 +219,14 @@ void GDNetworkManager::draw() {
 
 
 void GDNetworkManager::drawFrame(WorldStatePacket &packet) {
-    UtilityFunctions::printerr("GDNetworkManager::drawFrame : called");
+    //UtilityFunctions::printerr("GDNetworkManager::drawFrame : called");
 
     for (auto entity : packet.entities) {
         Vector2 pos = Vector2(entity.x, entity.y);
 
         auto it = replicated_nodes.find(entity.network_id);
         if (it == replicated_nodes.end()) {
-            UtilityFunctions::printerr("GDNetworkManager::drawFrame : node not find");
+            // UtilityFunctions::printerr("GDNetworkManager::drawFrame : node not find");
             continue;
             // TODO : si le noeud existe pas le creer
         }
@@ -238,7 +238,7 @@ void GDNetworkManager::drawFrame(WorldStatePacket &packet) {
 
                 if (entity.network_id != local_network_id) {
                     Vector2 direction = pos - body->get_global_position();
-                    UtilityFunctions::printerr("set target pos et direction : ", pos, " / ",direction);
+                    // UtilityFunctions::printerr("set target pos et direction : ", pos, " / ",direction);
                     body->set("target_pos", pos);
                     body->set("direction", direction);
                 }
