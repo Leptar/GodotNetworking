@@ -56,6 +56,7 @@ namespace godot {
         struct InputPacket {
             uint32_t packet_type = 5;
             uint32_t network_id;
+            uint32_t last_sequence;
             uint8_t keys[20];
             float aim_x[20];
             float aim_y[20];
@@ -87,7 +88,7 @@ namespace godot {
         uint32_t type_id;
         float x;
         float y;
-
+        uint32_t last_processed_sequence = 0;
     };
 }
 

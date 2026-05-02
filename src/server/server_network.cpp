@@ -252,6 +252,7 @@ void ServerNetworkManager::_on_packet_received(const std::string& sender_ip, int
             std::cout << "[Network] Received Input from " << receivedpacket.network_id << std::endl;
 
             entt_manager->update_player_input(receivedpacket.network_id,
+                    receivedpacket.last_sequence,
                     receivedpacket.keys[0],
                     receivedpacket.aim_x[0],
                     receivedpacket.aim_y[0]
@@ -300,6 +301,7 @@ void ServerNetworkManager::broadcast_world_state() {
         encode_uint32(worldStatePacket, entityState.type_id);
         encode_float(worldStatePacket, entityState.x);
         encode_float(worldStatePacket, entityState.y);
+        encode_uint32(worldStatePacket, entityState.last_processed_sequence);
     }
 
     for (const auto& [_, client] : connected_clients) {

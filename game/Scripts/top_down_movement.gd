@@ -19,22 +19,13 @@ func enable_cam():
 	camera.enabled = true
 
 func _physics_process(_delta):
-# 1. Récupérer la direction (Input)
-	if bIsLocalPlayer :
-		direction = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	
-	# 2. Appliquer le mouvement
-	if direction && bIsLocalPlayer :
-		velocity = round(direction * SPEED)
-		move_and_slide()
-	elif direction && !bIsLocalPlayer:
+	if direction && !bIsLocalPlayer:
 		global_position = global_position.move_toward(target_pos, _delta * SPEED)
 	else:
 		velocity = Vector2.ZERO
 	
 	direction.normalized()
-	
-	# 3. Gérer les animations
+
 	update_animation()
 
 func update_animation():
@@ -56,3 +47,22 @@ func update_animation():
 			animated_sprite.play("RUN LEFT")
 		else:
 			animated_sprite.play("RUN RIGHT")
+
+
+func perform_simulation(keys: int, delta: float) -> Vector2:
+	# Convertir les bits 'keys' en vecteur direction
+	var dir = Vector2.ZERO
+	if keys & 1: dir.y -= 1 # UP
+	if keys & 2: dir.y += 1 # DOWN
+	if keys & 4: dir.x -= 1 # LEFT
+	if keys & 8: dir.x += 1 # RIGHT
+	
+	direction = dir
+	
+	if dir != Vector2.ZERO:
+		velocity = dir.normalized() * SPEED
+	else:
+		velocity = Vector2.ZERO
+	move_and_slide()
+	# retourne la position pour la save par le Net manager
+	return global_position

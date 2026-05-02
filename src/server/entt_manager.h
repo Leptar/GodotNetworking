@@ -47,7 +47,7 @@ public:
 
     position& get_entity_pos(uint32_t network_id);
 
-    void update_player_input(uint32_t network_id, uint8_t keys, float aim_x, float aim_y);
+    void update_player_input(uint32_t network_id, uint32_t sequence, uint8_t keys, float aim_x, float aim_y);
 
     void update(float deltatime);
 

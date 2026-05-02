@@ -149,7 +149,16 @@ void GDNetworkManager::_physics_process(double delta) {
     // UtilityFunctions::printerr("current keys : ", current_keys);
     // if (current_keys == 0) { return; }
     Vector2 mouse_pos = get_viewport()->get_mouse_position();
-    FrameInput frame_input{current_keys, mouse_pos.x, mouse_pos.y};
+    FrameInput frame_input{current_sequence, current_keys, mouse_pos.x, mouse_pos.y, 0.f,0.f};
+
+    //TODO : appel methode pour mouvoir le joueur local
+    Node* player_node = replicated_nodes[local_network_id].get_node();
+    if (player_node) {
+        Node2D* body = player_node->get_node<Node2D>("Body2D");
+        Vector2 position = body->call("perform_simulation", current_keys, delta);
+        frame_input.x = position.x;
+        frame_input.y = position.y;
+    }
 
     if (input_history.size() >= 20) {
         input_history.pop_front();
@@ -160,6 +169,7 @@ void GDNetworkManager::_physics_process(double delta) {
 
     InputPacket input_packet{};
     input_packet.packet_type = INPUT;
+    input_packet.last_sequence = current_sequence;
     input_packet.network_id = local_network_id;
 
     int index = 0;
@@ -503,16 +513,68 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             }
 
             uint32_t num_entities = data.decode_u32(8);
+            
+            UtilityFunctions::print("Taille reçue : ", data.size());
+            UtilityFunctions::print("Entités annoncées : ", num_entities);
+
+            if (data.size() < (int64_t)12 + (num_entities * 20)) {
+                UtilityFunctions::printerr("Paquet WORLD_STATE trop court !");
+                break;
+            }
+
             std::vector<EntityState> entities;
             EntityState entity;
 
             for (uint32_t i = 0; i < num_entities; i++) {
-                entity.network_id = data.decode_u32(12 + i * 16);
-                entity.type_id = data.decode_u32(16 + i * 16);
-                entity.x = data.decode_float(20 + i * 16);
-                entity.y = data.decode_float(24 + i * 16);
+                entity.network_id = data.decode_u32(12 + i * 20);
+                entity.type_id = data.decode_u32(16 + i * 20);
+                entity.x = data.decode_float(20 + i * 20);
+                entity.y = data.decode_float(24 + i * 20);
+                entity.last_processed_sequence = data.decode_u32(28 + i * 20);
 
                 entities.push_back(entity);
+
+                if (entity.network_id != local_network_id) continue;
+
+                auto it = std::find_if(input_history.begin(), input_history.end(),
+                    [&entity](const FrameInput& frame) {
+                        return frame.sequence == entity.last_processed_sequence;
+                    }
+                );
+
+                if (it == input_history.end()) continue;
+
+                Vector2 pos_serveur(entity.x, entity.y);
+                Vector2 pos_prediction(it->x, it->y);
+
+                float distance_erreur = pos_prediction.distance_to(pos_serveur);
+                Vector2 vecteur_erreur = pos_serveur - pos_prediction;
+
+                 if (distance_erreur > 5 && distance_erreur < 15) {
+                     // TODO : ressort
+
+                 } else if (distance_erreur >= 15) {
+                     UtilityFunctions::print(distance_erreur);
+                     Node* player_node = replicated_nodes[local_network_id].get_node();
+                     if (player_node) {
+                         // TP
+                         Node2D* body = player_node->get_node<Node2D>("Body2D");
+                         body->set_global_position(pos_serveur);
+
+                         // vide input
+                         while (!input_history.empty() && input_history.front().sequence <= entity.last_processed_sequence) {
+                             input_history.pop_front();
+                             UtilityFunctions::print(input_history.size());
+                         }
+
+                         // replay
+                         for (FrameInput &frame : input_history) {
+                             Vector2 position = player_node->call("perform_simulation", frame.keys, 1.f/60.f);
+                             frame.x = position.x;
+                             frame.y = position.y;
+                         }
+                     }
+                 }
             }
 
             WorldStatePacket frame_packet;

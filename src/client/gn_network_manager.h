@@ -55,9 +55,10 @@ namespace godot {
         uint64_t latency;
 
         struct FrameInput {
+            uint32_t sequence;
             uint8_t keys;
-            float aim_x;
-            float aim_y;
+            float aim_x, aim_y;
+            float x, y;
         };
 
         std::deque<FrameInput> input_history{};

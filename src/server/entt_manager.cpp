@@ -38,7 +38,7 @@ position& EnttManager::get_entity_pos(uint32_t network_id) {
     return registry.get<position>(it->second.local_entity);
 }
 
-void EnttManager::update_player_input(uint32_t network_id, uint8_t keys, float aim_x, float aim_y) {
+void EnttManager::update_player_input(uint32_t network_id, uint32_t sequence, uint8_t keys, float aim_x, float aim_y) {
     auto it = network_to_local_map.find(network_id);
     if (it == network_to_local_map.end()) {
         return;
@@ -46,6 +46,7 @@ void EnttManager::update_player_input(uint32_t network_id, uint8_t keys, float a
 
     PlayerInput& input = registry.get<PlayerInput>(it->second.local_entity);
 
+    input.last_sequence = sequence;
     input.current_keys = keys;
     input.aim_x = aim_x;
     input.aim_y = aim_y;
@@ -87,12 +88,14 @@ std::vector<godot::EntityState> EnttManager::get_world_state() {
     for (const auto& [net_id, context] : network_to_local_map) {
         position& pos = registry.get<position>(context.local_entity);
         typeID& type = registry.get<typeID>(context.local_entity);
+        PlayerInput* input = registry.try_get<PlayerInput>(context.local_entity);
 
         godot::EntityState state;
         state.network_id = net_id;
         state.type_id = type.type_id;
         state.x = pos.x;
         state.y = pos.y;
+        if (input) state.last_processed_sequence = input->last_sequence;
 
         world_state.push_back(state);
     }
