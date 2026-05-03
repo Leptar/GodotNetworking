@@ -513,7 +513,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
             }
 
             uint32_t num_entities = data.decode_u32(8);
-            
+
             UtilityFunctions::print("Taille reçue : ", data.size());
             UtilityFunctions::print("Entités annoncées : ", num_entities);
 
@@ -550,8 +550,12 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
                 float distance_erreur = pos_prediction.distance_to(pos_serveur);
                 Vector2 vecteur_erreur = pos_serveur - pos_prediction;
 
-                 if (distance_erreur > 5 && distance_erreur < 15) {
-                     // TODO : ressort
+                if (distance_erreur > 5 && distance_erreur < 15) {
+                    Node* player_node = replicated_nodes[local_network_id].get_node();
+                    if (player_node) {
+                        Node2D* body = player_node->get_node<Node2D>("Body2D");
+                        body->call("set_error_offset", vecteur_erreur);
+                    }
 
                  } else if (distance_erreur >= 15) {
                      UtilityFunctions::print(distance_erreur);
@@ -560,6 +564,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
                          // TP
                          Node2D* body = player_node->get_node<Node2D>("Body2D");
                          body->set_global_position(pos_serveur);
+                         body->call("set_error_offset", Vector2());
 
                          // vide input
                          while (!input_history.empty() && input_history.front().sequence <= entity.last_processed_sequence) {
@@ -569,7 +574,7 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
 
                          // replay
                          for (FrameInput &frame : input_history) {
-                             Vector2 position = player_node->call("perform_simulation", frame.keys, 1.f/60.f);
+                             Vector2 position = body->call("perform_simulation", frame.keys, 1.f/60.f);
                              frame.x = position.x;
                              frame.y = position.y;
                          }

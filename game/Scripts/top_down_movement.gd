@@ -4,6 +4,7 @@ const SPEED = 300.0
 var bIsLocalPlayer = false
 var direction = Vector2.ZERO
 var target_pos = Vector2.ZERO
+var error_offset = Vector2.ZERO 
 
 # On récupère le bon nœud : AnimatedSprite2D
 @onready var animated_sprite = $AnimatedSprite2D
@@ -19,6 +20,11 @@ func enable_cam():
 	camera.enabled = true
 
 func _physics_process(_delta):
+	if bIsLocalPlayer && error_offset.length() > 0.1:
+		var correction_step = error_offset * 0.1
+		global_position += correction_step
+		error_offset -= correction_step
+		
 	if direction && !bIsLocalPlayer:
 		global_position = global_position.move_toward(target_pos, _delta * SPEED)
 	else:
@@ -66,3 +72,6 @@ func perform_simulation(keys: int, delta: float) -> Vector2:
 	move_and_slide()
 	# retourne la position pour la save par le Net manager
 	return global_position
+
+func set_error_offset(error_vec: Vector2):
+	error_offset = error_vec
