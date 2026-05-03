@@ -514,13 +514,8 @@ void GDNetworkManager::_on_packet_received(const String& sender_ip, int sender_p
 
             uint32_t num_entities = data.decode_u32(8);
 
-            UtilityFunctions::print("Taille reçue : ", data.size());
-            UtilityFunctions::print("Entités annoncées : ", num_entities);
-
-            if (data.size() < (int64_t)12 + (num_entities * 20)) {
-                UtilityFunctions::printerr("Paquet WORLD_STATE trop court !");
-                break;
-            }
+            //UtilityFunctions::print("Taille reçue : ", data.size());
+            //UtilityFunctions::print("Entités annoncées : ", num_entities);
 
             std::vector<EntityState> entities;
             EntityState entity;
